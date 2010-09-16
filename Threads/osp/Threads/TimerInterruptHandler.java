@@ -1,8 +1,6 @@
 package osp.Threads;
 
 import osp.IFLModules.*;
-import osp.Utilities.*;
-import osp.Hardware.*;
 
 /**    
        The timer interrupt handler.  This class is called upon to
@@ -20,7 +18,7 @@ public class TimerInterruptHandler extends IflTimerInterruptHandler
     */
     public void do_handleInterrupt()
     {
-        // your code goes here
+    	 ThreadCB.dispatch();
 
     }
 
