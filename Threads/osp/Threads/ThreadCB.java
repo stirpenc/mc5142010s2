@@ -32,6 +32,7 @@ import osp.Resources.*;
 */
 public class ThreadCB extends IflThreadCB 
 {
+	//Arraylist that will contains all threads
 	private static ArrayList<ThreadCB> listThreads;
     /**
        The thread constructor. Must call 
@@ -76,7 +77,7 @@ public class ThreadCB extends IflThreadCB
 
         @OSPProject Threads
     */
-    public ThreadCB do_create(TaskCB task)
+    public static ThreadCB do_create(TaskCB task)
     {
         
         if (task.getThreadCount() >= MaxThreadsPerTask)
@@ -119,10 +120,38 @@ public class ThreadCB extends IflThreadCB
     */
     public void do_kill()
     {
-        // your code goes here
-
+    	//Gets the task of the thread
+    	TaskCB task = getTask();
+    	
+    	//If the thread is ready just remove it
+    	if(getStatus() == GlobalVariables.ThreadReady)
+    	{
+    		if(listThreads.remove(this) == false)
+    		{
+    			return;
+    		}
+    	}
+    	//remove the thread from task
+    	if (task.removeThread(this) != GlobalVariables.SUCCESS)
+    	{
+    		return;
+    	}
+    	
+    	for(int i = 0; i < Device.getTableSize(); i++)
+    	{
+    		Device.get(i).cancelPendingIO(this);
+    	}
+    	
+    	//Make the thread give up for resourses
+    	ResourceCB.giveupResources(this);
+    	
+    	dispatch();
+    	
+    	if (task.getThreadCount() == 0)
+    	{
+    		task.kill();
+    	}
     }
-
     /** Suspends the thread that is currenly on the processor on the 
         specified event. 
 
@@ -141,8 +170,23 @@ public class ThreadCB extends IflThreadCB
     */
     public void do_suspend(Event event)
     {
-        // your code goes here
-
+        int currentStatus = getStatus();
+        
+        //Set the new status for the thread
+        if(currentStatus == GlobalVariables.ThreadRunning)
+        {
+        	setStatus(GlobalVariables.ThreadWaiting);
+        }else
+        {
+        	setStatus(currentStatus + 1);
+        }
+        //remove from the list of threads
+        listThreads.remove(this);
+        
+        //Add this thread to event queue
+        event.addThread(this);
+        
+        dispatch();
     }
 
     /** Resumes the thread.
@@ -156,8 +200,17 @@ public class ThreadCB extends IflThreadCB
     */
     public void do_resume()
     {
-        // your code goes here
+    	int currentStatus = getStatus();
+    	if(currentStatus == GlobalVariables.ThreadWaiting)
+    	{
+    		setStatus(GlobalVariables.ThreadReady);
+    		listThreads.add(this);
+    	}else
+    	{
+    		setStatus(currentStatus - 1);
+    	}
 
+    	dispatch();
     }
 
     /** 
