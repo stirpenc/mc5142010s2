@@ -8,6 +8,8 @@
 *
 * 09/16/10
 * 1. Implementation of do_create still not working properly
+* 09/23/10
+* 1. Only do_dispatch not implemented
 */
 
 package osp.Threads;
