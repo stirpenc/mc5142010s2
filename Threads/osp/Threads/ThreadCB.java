@@ -14,13 +14,13 @@
 
 package osp.Threads;
 import java.util.ArrayList;
-import java.util.Vector;
-import java.util.Enumeration;
+//import java.util.Vector;
+//import java.util.Enumeration;
 
 import osp.Utilities.*;
 import osp.IFLModules.*;
 import osp.Tasks.*;
-import osp.EventEngine.*;
+//import osp.EventEngine.*;
 import osp.Hardware.*;
 import osp.Devices.*;
 import osp.Memory.*;
@@ -147,7 +147,7 @@ public class ThreadCB extends IflThreadCB
     	//Make the thread give up for resourses
     	ResourceCB.giveupResources(this);
     	
-    	dispatch();
+    	do_dispatch();
     	
     	if (task.getThreadCount() == 0)
     	{
@@ -230,8 +230,36 @@ public class ThreadCB extends IflThreadCB
     */
     public static int do_dispatch()
     {
-    	//Just to compile
-    	return 0;
+    	//Local variables
+    	TaskCB newTaskCB = null;
+    	ThreadCB currentThreadCB = null;
+    	ThreadCB newThreadCB = null;
+    	
+    	//Getting the current thread to be stopped.
+    	newTaskCB = MMU.getPTBR().getTask();
+    	currentThreadCB = newTaskCB.getCurrentThread();
+    	
+    	if(currentThreadCB != null)
+    	//To dispatch a new thread, first we need to remove the current thread from the device.
+    	newTaskCB.setCurrentThread(null);
+    	//Set the stopped thread as ready
+    	currentThreadCB.setStatus(ThreadReady);
+    	//Put the stopped thread in the array.
+    	listThreads.add(currentThreadCB);
+    	
+    	//Get the first thread in the array
+    	newThreadCB = listThreads.remove(0);
+    	//Set the page file to be the current thread page
+    	MMU.setPTBR(newThreadCB.getTask().getPageTable());
+    	//Set the task's thread as the new thread
+    	newThreadCB.getTask().setCurrentThread(newThreadCB);
+    	
+    	newThreadCB.setStatus(ThreadRunning);
+    	
+    	//Set the time quantum as 100ms
+    	HTimer.set(100);   	
+    	
+    	return GlobalVariables.SUCCESS;
     }
 
     /**
