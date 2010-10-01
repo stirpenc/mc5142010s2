@@ -128,18 +128,25 @@ public class ThreadCB extends IflThreadCB {
 				return;
 			}
 		}
+		//Remove the the task from processor if it is the running task
+		if(getStatus() == GlobalVariables.ThreadRunning)
+		{
+			MMU.getPTBR().getTask().setCurrentThread(null);
+		}
 		// remove the thread from task
 		if (task.removeThread(this) != GlobalVariables.SUCCESS) {
 			return;
 		}
+		
+		setStatus(GlobalVariables.ThreadKill);
 
 		for (int i = 0; i < Device.getTableSize(); i++) {
 			Device.get(i).cancelPendingIO(this);
 		}
 
-		// Make the thread give up for resourses
+		// Make the thread give up for resources
 		ResourceCB.giveupResources(this);
-
+		
 		dispatch();
 
 		if (task.getThreadCount() == 0) {
@@ -164,37 +171,22 @@ public class ThreadCB extends IflThreadCB {
 	 * @OSPProject Threads
 	 */
 	public void do_suspend(Event event) {
-		if(MMU.getPTBR() == null)
-		{
-			//TaskCB currentTask = MMU.getPTBR().getTask();
-		//	ThreadCB runningThread = currentTask.getCurrentThread();
-			int currentStatus = this.getStatus();
-	
-			if(currentStatus == GlobalVariables.ThreadReady)
-			{
-				// remove from the list of threads
-				listThreads.remove(this);
-			}
-			// Set the new status for the thread
-			if (currentStatus == GlobalVariables.ThreadRunning) 
-			{
-				setStatus(GlobalVariables.ThreadWaiting);
-				this.getTask().setCurrentThread(null);
-			}else if(currentStatus == GlobalVariables.ThreadReady)
-			{
-				setStatus(GlobalVariables.ThreadWaiting);
-			}else if(currentStatus >= GlobalVariables.ThreadWaiting)
-			{
-				setStatus(currentStatus + 1);
-			}
-			
-	
-			MMU.setPTBR(null);
-			
-			// Add this thread to event queue
-			event.addThread(this);
+		int currentStatus = this.getStatus();
 
+		// Set the new status for the thread
+		if (currentStatus == GlobalVariables.ThreadRunning) 
+		{
+			setStatus(GlobalVariables.ThreadWaiting);
+			this.getTask().setCurrentThread(null);
 		}
+		else if(currentStatus >= GlobalVariables.ThreadWaiting)
+		{
+			setStatus(currentStatus + 1);
+		}
+		listThreads.remove(this);
+		// Add this thread to event queue
+		event.addThread(this);
+
 		dispatch();
 	}
 
