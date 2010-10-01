@@ -97,12 +97,14 @@ public class ThreadCB extends IflThreadCB
         //Verify if the thread can be add to the task
         if(task.addThread(newThreadCB) != GlobalVariables.SUCCESS)
         {
-        	do_dispatch();
+        	//do_dispatch();
         	return null;
         }
         
         //add to the control list
         listThreads.add(newThreadCB);
+        
+        do_dispatch();
         //Still not working WHY??
         return newThreadCB;      
     }
@@ -147,7 +149,7 @@ public class ThreadCB extends IflThreadCB
     	//Make the thread give up for resourses
     	ResourceCB.giveupResources(this);
     	
-    	do_dispatch();
+    	dispatch();
     	
     	if (task.getThreadCount() == 0)
     	{
@@ -244,9 +246,10 @@ public class ThreadCB extends IflThreadCB
     	newTaskCB.setCurrentThread(null);
     	//Set the stopped thread as ready
     	currentThreadCB.setStatus(ThreadReady);
+    	//Remove thread page from MMU
+    	MMU.setPTBR(null);
     	//Put the stopped thread in the array.
     	listThreads.add(currentThreadCB);
-    	
     	//Get the first thread in the array
     	newThreadCB = listThreads.remove(0);
     	//Set the page file to be the current thread page
