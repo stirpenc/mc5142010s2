@@ -25,6 +25,12 @@ public class PageTableEntry extends IflPageTableEntry
 
        @OSPProject Memory
     */
+	
+	public PageTableEntry(PageTable paramPageTable, int paramInt)
+	{
+		super(paramPageTable, paramInt);
+	}
+	
     public PageTableEntry(PageTable ownerPageTable, int pageNumber)
     {
         // your code goes here
@@ -60,6 +66,7 @@ public class PageTableEntry extends IflPageTableEntry
     public void do_unlock()
     {
         // your code goes here
+		
 
     }
 
