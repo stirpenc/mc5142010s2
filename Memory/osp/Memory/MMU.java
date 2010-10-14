@@ -17,6 +17,7 @@ import osp.Interrupts.*;
 */
 public class MMU extends IflMMU
 {
+	private static int GotAddress;
     /** 
         This method is called once before the simulation starts. 
 	Can be used to initialize the frame table and other static variables.
@@ -25,8 +26,16 @@ public class MMU extends IflMMU
     */
     public static void init()
     {
-        // your code goes here
-
+    	private int counter = 0;
+    	
+        while(counter != MMU.getFrameTableSize()){
+        	setFrame(counter, new FrameTableEntry(counter));
+			counter++;	
+        }
+        
+        GotAddress = (int)Math.pow(2.0, getVirtualAddressBits() - getPageAddressBits());	
+        PageFaultHandler.init();
+        
     }
 
     /**
@@ -51,7 +60,9 @@ public class MMU extends IflMMU
     static public PageTableEntry do_refer(int memoryAddress,
 					  int referenceType, ThreadCB thread)
     {
-        // your code goes here
+        private int Address = memoryAddress / (int)Math.pow(2.0, getVirtualAddressBits() - getPageAddressBits());
+		
+		PageTableEntry localPT = isValid().
 
     }
 
