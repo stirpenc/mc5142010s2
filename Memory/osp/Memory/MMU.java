@@ -34,7 +34,6 @@ public class MMU extends IflMMU
         
         GotAddress = (int)Math.pow(2.0, getVirtualAddressBits() - getPageAddressBits());	
         PageFaultHandler.init();
-        
     }
 
     /**
@@ -59,10 +58,30 @@ public class MMU extends IflMMU
     static public PageTableEntry do_refer(int memoryAddress,
 					  int referenceType, ThreadCB thread)
     {
-        private int Address = memoryAddress / (int)Math.pow(2.0, getVirtualAddressBits() - getPageAddressBits());
+        int address = memoryAddress / (int)Math.pow(2.0, getVirtualAddressBits() - getPageAddressBits());
 		
-		PageTableEntry localPT = isValid().
-
+		PageTableEntry tempPageTableEntry = getPTBR().pages[address];
+		
+		//verifies if the page is invalid
+		if(!tempPageTableEntry.isValid())
+		{
+			//if invalid and the thread wasnt who caused the pagefault
+			if(tempPageTableEntry.getValidatingThread() != thread)
+			{
+				if(thread.getStatus() != GlobalVariables.ThreadKill)
+				{
+				//and set the dirty and referenced
+				tempPageTableEntry.getFrame().setDirty(true);
+				tempPageTableEntry.getFrame().setReferenced(true);
+				}
+				return tempPageTableEntry;
+			}
+			else
+			{
+				//Continuar na pagina 101
+			}
+		}
+		return tempPageTableEntry;
     }
 
     /** Called by OSP after printing an error message. The student can
