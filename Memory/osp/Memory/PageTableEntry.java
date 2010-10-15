@@ -1,7 +1,5 @@
 package osp.Memory;
 
-import osp.Hardware.*;
-import osp.Tasks.*;
 import osp.Threads.*;
 import osp.Devices.*;
 import osp.Utilities.*;
@@ -86,6 +84,7 @@ public class PageTableEntry extends IflPageTableEntry
     */
     public void do_unlock()
     {
+    	//Just decrement the lock count
         getFrame().decrementLockCount();
 
     }
