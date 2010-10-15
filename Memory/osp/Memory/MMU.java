@@ -26,11 +26,10 @@ public class MMU extends IflMMU
     */
     public static void init()
     {
-    	private int counter = 0;
-    	
-        while(counter != MMU.getFrameTableSize()){
-        	setFrame(counter, new FrameTableEntry(counter));
-			counter++;	
+    	//Set all the frames
+    	for(int i = 0; i < MMU.getFrameTableSize(); i++)
+    	{
+        	setFrame(i, new FrameTableEntry(i));
         }
         
         GotAddress = (int)Math.pow(2.0, getVirtualAddressBits() - getPageAddressBits());	

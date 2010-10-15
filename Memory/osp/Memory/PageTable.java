@@ -8,9 +8,7 @@ package osp.Memory;
 */
 import java.lang.Math;
 import osp.Tasks.*;
-import osp.Utilities.*;
 import osp.IFLModules.*;
-import osp.Hardware.*;
 
 public class PageTable extends IflPageTable
 {
@@ -25,8 +23,18 @@ public class PageTable extends IflPageTable
     */
     public PageTable(TaskCB ownerTask)
     {
-        // your code goes here
-
+    	super(ownerTask);
+    	//calculate the number os passible pages
+    	int numberOfPages = (int)Math.pow(2, MMU.getPageAddressBits());
+    	
+    	//Instantiate an array of PageTableEntry with the size
+    	pages = new PageTableEntry[numberOfPages];
+    	
+    	//Instantiate all new pagetableentry in the array
+    	for(int i = 0; i < numberOfPages; i++)
+    	{
+    		pages[i] = new PageTableEntry(this, i);
+    	}
     }
 
     /**
@@ -37,8 +45,23 @@ public class PageTable extends IflPageTable
     */
     public void do_deallocateMemory()
     {
-        // your code goes here
-
+        TaskCB task = getTask();
+        
+        //We need to cleanup all Frames
+        for(int i = 0; i < MMU.getFrameTableSize(); i++)
+        {
+        	//Gets a reference to the current page
+        	FrameTableEntry tempFrameTableEntry = MMU.getFrame(i);
+        	PageTableEntry tempPageTableEntry = tempFrameTableEntry.getPage();
+        	if(tempPageTableEntry.getTask() == task)
+        	{
+        		//Makes the page null, the dirty and referenced false and unreserve 
+        		tempFrameTableEntry.setPage(null);
+        		tempFrameTableEntry.setDirty(false);
+        		tempFrameTableEntry.setReferenced(false);
+        		tempFrameTableEntry.setUnreserved(task);
+        	}
+        }
     }
 
 

@@ -49,6 +49,7 @@ public class PageTableEntry extends IflPageTableEntry
     	//Gets the thread
         ThreadCB thread = iorb.getThread();
         
+        //This part verifies if the thread has already generated a pagefault
         //if the page is involved in a pagefault
         if(getValidatingThread() != null)
         {
@@ -60,7 +61,7 @@ public class PageTableEntry extends IflPageTableEntry
         	}
         }
         
-        //Else we suspend the thread
+        //if the thread 
         thread.suspend(this);
         
         int HandlerResult = PageFaultHandler.handlePageFault(thread, GlobalVariables.MemoryLock, this);
