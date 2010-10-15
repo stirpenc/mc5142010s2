@@ -67,6 +67,7 @@ public class PageTableEntry extends IflPageTableEntry
         
         if(HandlerResult == GlobalVariables.SUCCESS)
         {
+        	getFrame().incrementLockCount();
         	return GlobalVariables.SUCCESS;
         }
         else
