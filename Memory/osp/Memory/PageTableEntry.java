@@ -6,6 +6,7 @@ import osp.Threads.*;
 import osp.Devices.*;
 import osp.Utilities.*;
 import osp.IFLModules.*;
+
 /**
    The PageTableEntry object contains information about a specific virtual
    page in memory, including the page frame in which it resides.
@@ -25,16 +26,10 @@ public class PageTableEntry extends IflPageTableEntry
 
        @OSPProject Memory
     */
-	
-	public PageTableEntry(PageTable paramPageTable, int paramInt)
-	{
-		super(paramPageTable, paramInt);
-	}
-	
+		
     public PageTableEntry(PageTable ownerPageTable, int pageNumber)
     {
-        // your code goes here
-
+        super(ownerPageTable, pageNumber);
     }
 
     /**
@@ -53,8 +48,34 @@ public class PageTableEntry extends IflPageTableEntry
      */
     public int do_lock(IORB iorb)
     {
-        // your code goes here
-
+    	//Gets the thread
+        ThreadCB thread = iorb.getThread();
+        
+        //if the page is involved in a pagefault
+        if(getValidatingThread() != null)
+        {
+        	if(getValidatingThread() == thread)
+        	{
+        		getFrame().incrementLockCount();
+        		//return Success because the page has already generated a page fault
+        		return GlobalVariables.SUCCESS;
+        	}
+        }
+        
+        //Else we suspend the thread
+        thread.suspend(this);
+        
+        int HandlerResult = PageFaultHandler.handlePageFault(thread, GlobalVariables.MemoryLock, this);
+        
+        if(HandlerResult == GlobalVariables.SUCCESS)
+        {
+        	return GlobalVariables.SUCCESS;
+        }
+        else
+        {
+        	return GlobalVariables.FAILURE;
+        }
+        
     }
 
     /** This method decreases the lock count on the page by one. 
@@ -65,8 +86,7 @@ public class PageTableEntry extends IflPageTableEntry
     */
     public void do_unlock()
     {
-        // your code goes here
-		
+        getFrame().decrementLockCount();
 
     }
 
