@@ -76,11 +76,97 @@ public class PageFaultHandler extends IflPageFaultHandler
 					 int referenceType,
 					 PageTableEntry page)
     {
-        // your code goes here
+    	//Check if no pagefault happen
+    	if(page.isValid())
+    	{
+    		page.notifyThreads();
+    		ThreadCB.dispatch();
+    		return FAILURE;
+    	}
+    	
+    	Event localEvent = new SystemEvent("PageFault");
+    	thread.suspend(localEvent);
+    	
+    	FrameTableEntry newFrame = null;
+    	
+    	newFrame = allocateNewFrame();
+    	if(newFrame == null)//Could not allocate a new frame.
+    	{
+    		page.notifyThreads();
+    		localEvent.notifyThreads();
+    		ThreadCB.dispatch();
+    		return NotEnoughMemory;
+    	}
+    	
+    	page.setValidatingThread(thread);
+    	
+    	if(newFrame.getPage() != null)
+    	{
+    		PageTableEntry newPage = newFrame.getPage();
+    		if(newFrame.isDirty())
+    		{
+    			SwapOut(newFrame, thread);
+    			
+    			if(thread.getStatus() == GlobalVariables.ThreadKill)
+    			{
+    				page.notifyThreads();
+    				localEvent.notifyThreads();
+    				ThreadCB.dispatch();
+    				return FAILURE;
+    			}
+    			newFrame.setDirty(false);
+    		}
+    		newFrame.setReferenced(false);
+    		newPage.setValid(false);
+    		newPage.setFrame(null);
+    		if(newPage.getHead().getStatus() != 1)
+    		{
+    			newFrame.setReserved(null);
+    		}
+    	}
+    	
+    	if(thread.getStatus() == ThreadKill)
+    	{
+    		page.notifyThreads();
+    		page.setValidatingThread(null);
+    		page.setFrame(null);
+    		localEvent.notifyThreads();
+    		ThreadCB.dispatch();
+    		return FAILURE;
+    	}
+    	
+    	page.setFrame(newFrame);
+    	SwapIn(thread, page);
+    	
+    	if(thread.getStatus() == ThreadKill)
+    	{
+    		page.notifyThreads();
+    		page.setValidatingThread(null);
+    		page.setFrame(null);
+    		localEvent.notifyThreads();
+    		ThreadCB.dispatch();
+    		return FAILURE;
+    	}
+    	
+        return 0;
 
     }
 
-
+    public static FrameTableEntry allocateNewFrame()
+    {
+    	
+    	return new FrameTableEntry(0);
+    }
+    
+    public static void SwapIn(ThreadCB thread, PageTableEntry page)
+    {
+    	return;
+    }
+    
+    public static void SwapOut(FrameTableEntry frame, ThreadCB thread)
+    {
+    	return;
+    }
     /*
        Feel free to add methods/fields to improve the readability of your code
     */
