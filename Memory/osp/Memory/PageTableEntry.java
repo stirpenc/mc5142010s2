@@ -15,6 +15,7 @@ import osp.IFLModules.*;
 
 public class PageTableEntry extends IflPageTableEntry
 {
+	boolean pageFaulted = false;
     /**
        The constructor. Must call
 
@@ -51,7 +52,7 @@ public class PageTableEntry extends IflPageTableEntry
         
         //This part verifies if the thread has already generated a pagefault
         //if the page is involved in a pagefault
-        if(getValidatingThread() != null)
+        if(getValidatingThread() != null || pageFaulted)
         {
         	if(getValidatingThread() == thread)
         	{

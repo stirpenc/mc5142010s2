@@ -1,12 +1,12 @@
 package osp.Memory;
 
-import java.util.*;
+//import java.util.*;
 import osp.IFLModules.*;
 import osp.Threads.*;
-import osp.Tasks.*;
+//import osp.Tasks.*;
 import osp.Utilities.*;
-import osp.Hardware.*;
-import osp.Interrupts.*;
+//import osp.Hardware.*;
+//import osp.Interrupts.*;
 
 /**
     The MMU class contains the student code that performs the work of
@@ -17,7 +17,7 @@ import osp.Interrupts.*;
 */
 public class MMU extends IflMMU
 {
-	private static int GotAddress;
+	//private static int GotAddress;
     /** 
         This method is called once before the simulation starts. 
 	Can be used to initialize the frame table and other static variables.
@@ -32,8 +32,8 @@ public class MMU extends IflMMU
         	setFrame(i, new FrameTableEntry(i));
         }
         
-        GotAddress = (int)Math.pow(2.0, getVirtualAddressBits() - getPageAddressBits());	
-        PageFaultHandler.init();
+        //GotAddress = (int)Math.pow(2.0, getVirtualAddressBits() - getPageAddressBits());	
+        //PageFaultHandler. init();
     }
 
     /**

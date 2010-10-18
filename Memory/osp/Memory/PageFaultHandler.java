@@ -1,14 +1,19 @@
 package osp.Memory;
-import java.util.*;
-import osp.Hardware.*;
+//import java.util.*;
+//import osp.Hardware.*;
+//import javax.swing.text.Utilities;
+
+//import com.sun.org.apache.bcel.internal.generic.SWAP;
+
 import osp.Threads.*;
 import osp.Tasks.*;
-import osp.FileSys.FileSys;
-import osp.FileSys.OpenFile;
+//import osp.FileSys.FileSys;
+//import osp.FileSys.OpenFile;
 import osp.IFLModules.*;
-import osp.Interrupts.*;
+//import osp.Interrupts.*;
 import osp.Utilities.*;
-import osp.IFLModules.*;
+//import osp.IFLModules.*;
+//import sun.rmi.runtime.NewThreadAction;
 
 /**
     The page fault handler is responsible for handling a page
@@ -76,6 +81,7 @@ public class PageFaultHandler extends IflPageFaultHandler
 					 int referenceType,
 					 PageTableEntry page)
     {
+    	TaskCB newTask = page.getTask();
     	//Check if no pagefault happen
     	if(page.isValid())
     	{
@@ -89,7 +95,7 @@ public class PageFaultHandler extends IflPageFaultHandler
     	
     	FrameTableEntry newFrame = null;
     	
-    	newFrame = allocateNewFrame();
+    	newFrame = AllocateNewFrame();
     	if(newFrame == null)//Could not allocate a new frame.
     	{
     		page.notifyThreads();
@@ -121,7 +127,7 @@ public class PageFaultHandler extends IflPageFaultHandler
     		newPage.setFrame(null);
     		if(newPage.getHead().getStatus() != 1)
     		{
-    			newFrame.setReserved(null);
+    			newFrame.setUnreserved(null);
     		}
     	}
     	
@@ -140,6 +146,10 @@ public class PageFaultHandler extends IflPageFaultHandler
     	
     	if(thread.getStatus() == ThreadKill)
     	{
+    		if((newFrame.getPage() == null) && (newFrame.getPage().getTask() == thread.getTask()))
+    		{
+    			newFrame.setUnreserved(null);
+    		}
     		page.notifyThreads();
     		page.setValidatingThread(null);
     		page.setFrame(null);
@@ -148,24 +158,180 @@ public class PageFaultHandler extends IflPageFaultHandler
     		return FAILURE;
     	}
     	
-        return 0;
-
-    }
-
-    public static FrameTableEntry allocateNewFrame()
-    {
+    	newFrame.setPage(page);
+    	page.setValid(true);
+    	PrepareThread(thread);
     	
-    	return new FrameTableEntry(0);
+    	if(thread.getStatus() == ThreadKill)
+    	{
+    		localEvent.notifyThreads();
+    		if(thread.getTask().getStatus() != 1)
+    		{
+    			newFrame.setPage(null);
+    			newFrame.setReferenced(false);
+    		}
+    		page.setValid(false);
+    		page.setFrame(null);
+    		ThreadCB.dispatch();
+    		return FAILURE;
+    	}
+    	
+    	if(newFrame.getReserved() == newTask)
+    	{
+    		newFrame.setUnreserved(newTask);    		
+    	}
+    	
+    	page.setValidatingThread(null);
+    	page.notifyThreads();
+    	localEvent.notifyThreads();
+    	ThreadCB.dispatch();
+    	return SUCCESS;
+    }
+    
+    /*public static void Init()
+    {
+    	Daemon.create("Daemon", Swa
+    }*/
+
+    private static FrameTableEntry AllocateNewFrame()
+    {
+    	FrameTableEntry newFrame = null;
+    	for(int i = 0; i < MMU.getFrameTableSize(); i++)
+    	{
+    		newFrame = MMU.getFrame(i);
+    		if((newFrame.getPage() == null) && (newFrame.isReserved() || newFrame.getLockCount() != 0))
+    		{
+    			return newFrame; //Frame Locked or Reserved... Should cause error in called method.
+    		}
+    		if((newFrame.getPage() == null) && (!newFrame.isReserved()) && (newFrame.getLockCount() == 0))
+    		{
+    			return newFrame; //Frame OK.
+    		}
+    	}
+    	for(int i = 0; i < MMU.getFrameTableSize(); i++)
+    	{
+    		newFrame = MMU.getFrame(i);
+    		if((!newFrame.isDirty()) && (!newFrame.isReserved()) && (newFrame.getLockCount() == 0))
+    		{
+    			return newFrame; //Frame clean. OK!
+    		}
+    	}
+    	for(int i = 0; i < MMU.getFrameTableSize(); i++)
+    	{
+    		newFrame = MMU.getFrame(i);
+    		if((!newFrame.isReserved()) && (newFrame.getLockCount() == 0))
+    		{
+    			return newFrame; 
+    		}
+    	}
+    	return null;
+    	
     }
     
     public static void SwapIn(ThreadCB thread, PageTableEntry page)
     {
+    	TaskCB newTask = page.getTask();
+    	newTask.getSwapFile().read(page.getID(), page, thread);
     	return;
     }
     
     public static void SwapOut(FrameTableEntry frame, ThreadCB thread)
     {
-    	return;
+    	PageTableEntry newPage = frame.getPage();
+    	TaskCB newTask = newPage.getTask();
+    	newTask.getSwapFile().write(newPage.getID(), newPage, thread);
+       	return;
+    }
+    
+    public static void PrepareThread(ThreadCB thread)
+    {
+    	TaskCB newTask = thread.getTask();
+    	PageTableEntry newPage = AllocatePage(false, newTask.getPageTable());
+    	if((newPage == null) || (newPage.isValid()) || (newPage.getValidatingThread() != null))
+    	{
+    		return;
+    	}
+    	FrameTableEntry newFrame = AllocateNewFrame();
+    	if(newFrame == null)
+    		return;
+    	newPage.setValidatingThread(thread);
+    	newPage.pageFaulted = true;
+    	newFrame.setReserved(thread.getTask());
+    	if(newFrame.getPage() != null)
+    	{
+    		PageTableEntry newPage2 = newFrame.getPage();
+    		if(newFrame.isDirty())
+    		{
+    			SwapOut(newFrame, thread);
+    			if(thread.getStatus() == ThreadKill)
+    			{
+    				newPage.notifyThreads();
+    				newPage.setValidatingThread(null);
+    				newPage.pageFaulted = false;
+    				return;
+    			}
+    			newFrame.setDirty(false);
+    		}
+    		newFrame.setReferenced(false);
+    		newPage2.setValid(false);
+    		newPage2.setFrame(null);
+    		newFrame.setPage(null);
+    	}
+    	newPage.setFrame(newFrame);
+    	SwapIn(thread, newPage);
+    	
+    	if(thread.getStatus() == ThreadKill)
+    	{
+    		if((newFrame.getPage() != null) && (newFrame.getPage().getTask() == thread.getTask()))
+    		{
+    			newFrame.setUnreserved(null);
+    		}
+    		newPage.setValidatingThread(null);
+    		newPage.setFrame(null);
+    		newPage.pageFaulted = false;
+    		newPage.notifyThreads();
+    		return;
+    	}
+    	newFrame.setPage(newPage);
+    	newFrame.setDirty(false);
+    	newPage.setValid(true);
+    	if(newFrame.getReserved() == newPage.getTask())
+    	{
+    		newFrame.setUnreserved(newPage.getTask());
+    	}
+    	newPage.pageFaulted = false;
+    	newPage.setValidatingThread(null);
+    	newPage.notifyThreads();
+    }
+    
+    /*private static FrameTableEntry FindFrame()
+    {
+    	FrameTableEntry newFrame = null;
+    	for(int i = 0; i < MMU.getFrameTableSize(); i++)
+    	{
+    		newFrame = MMU.getFrame(i);
+    		if((newFrame.getPage() == null) && (newFrame.getLockCount() == 0) && (!newFrame.isReserved()))
+    		{
+    			return newFrame;
+    		}
+    	}
+    	return null;
+    }*/
+    
+    private static PageTableEntry AllocatePage(boolean validade, PageTable page)
+    {
+    	 int i = (int)Math.pow(2.0D, MMU.getPageAddressBits());
+    	 for (int j = 0; j < i; j++) {
+    	      PageTableEntry newPage = page.pages[j];
+    	      if ((!newPage.isReserved()) && 
+    	        ((!validade) || (newPage.isValid())) && 
+    	        ((validade) || (!newPage.isValid())) && (
+    	        (!newPage.isValid()) || (newPage.getFrame().getLockCount()  == 0)))
+    	      {
+    	        return newPage;
+    	      }
+    	 }
+    	 return null;
     }
     /*
        Feel free to add methods/fields to improve the readability of your code
