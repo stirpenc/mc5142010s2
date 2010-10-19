@@ -59,7 +59,8 @@ public class PageTable extends IflPageTable
         		tempFrameTableEntry.setPage(null);
         		tempFrameTableEntry.setDirty(false);
         		tempFrameTableEntry.setReferenced(false);
-        		tempFrameTableEntry.setUnreserved(task);
+        		if(tempFrameTableEntry.getReserved() != task)
+        			tempFrameTableEntry.setUnreserved(task);
         	}
         }
     }
