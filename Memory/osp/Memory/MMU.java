@@ -1,7 +1,9 @@
 package osp.Memory;
 
 //import java.util.*;
+import osp.Hardware.CPU;
 import osp.IFLModules.*;
+import osp.Interrupts.InterruptVector;
 import osp.Threads.*;
 //import osp.Tasks.*;
 import osp.Utilities.*;
@@ -62,24 +64,48 @@ public class MMU extends IflMMU
 		
 		PageTableEntry tempPageTableEntry = getPTBR().pages[address];
 		
-		//verifies if the page is invalid
-		if(!tempPageTableEntry.isValid())
+		//If the page has already faulted or some thread made it faulted we cause a pagefault
+		if(tempPageTableEntry.getValidatingThread() != null || (tempPageTableEntry.pageFaulted))
 		{
 			//if invalid and the thread wasnt who caused the pagefault
-			if(tempPageTableEntry.getValidatingThread() != thread)
+			//if(tempPageTableEntry.getValidatingThread() != thread)
 			{
-				if(thread.getStatus() != GlobalVariables.ThreadKill)
+				//suspend the thread
+				thread.suspend(tempPageTableEntry);
+				
+				//Define the dirty if the page is valid and the thread is not killed
+				if(thread.getStatus() != GlobalVariables.ThreadKill && tempPageTableEntry.isValid())
 				{
-				//and set the dirty and referenced
-				tempPageTableEntry.getFrame().setDirty(true);
-				tempPageTableEntry.getFrame().setReferenced(true);
+					//and set the dirty (if mem is write) and referenced
+					if(referenceType == MemoryWrite)
+					{
+						tempPageTableEntry.getFrame().setDirty(true);
+					}
+					tempPageTableEntry.getFrame().setReferenced(true);
 				}
 				return tempPageTableEntry;
+			
+				
 			}
-			else
+		}
+		
+		if(tempPageTableEntry.isValid())
+		{
+			if(referenceType == MemoryWrite)
 			{
-				//Continuar na pagina 101
+				tempPageTableEntry.getFrame().setDirty(false);
 			}
+			tempPageTableEntry.getFrame().setReferenced(false);
+			
+		}else
+		{
+			
+			//Set Interrupt
+			
+			InterruptVector.setPage(tempPageTableEntry);
+			InterruptVector.setInterruptType(referenceType);
+			InterruptVector.setThread(thread);
+			CPU.interrupt(PageFault);
 		}
 		return tempPageTableEntry;
     }

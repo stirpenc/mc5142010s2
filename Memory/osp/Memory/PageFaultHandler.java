@@ -232,7 +232,7 @@ public class PageFaultHandler extends IflPageFaultHandler
     {
     	TaskCB newTask = page.getTask();
     	newTask.getSwapFile().read(page.getID(), page, thread);
-    	return;
+    	
     }
     
     public static void SwapOut(FrameTableEntry frame, ThreadCB thread)
@@ -240,7 +240,7 @@ public class PageFaultHandler extends IflPageFaultHandler
     	PageTableEntry newPage = frame.getPage();
     	TaskCB newTask = newPage.getTask();
     	newTask.getSwapFile().write(newPage.getID(), newPage, thread);
-       	return;
+       	
     }
     
     public static void PrepareThread(ThreadCB thread)
