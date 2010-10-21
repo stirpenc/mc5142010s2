@@ -23,7 +23,7 @@ public class ResourceCB extends IflResourceCB
     */
     public ResourceCB(int qty)
     {
-        // your code goes here
+    	super(qty);
 
     }
 

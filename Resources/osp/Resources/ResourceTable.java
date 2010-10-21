@@ -24,8 +24,7 @@ public class ResourceTable extends IflResourceTable
     */   
     public ResourceTable()  
     {
-        // your code goes here
-
+        super();
     }
 
 
