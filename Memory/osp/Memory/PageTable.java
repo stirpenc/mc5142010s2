@@ -24,7 +24,7 @@ public class PageTable extends IflPageTable
     public PageTable(TaskCB ownerTask)
     {
     	super(ownerTask);
-    	//calculate the number os passible pages
+    	//calculate the number os possible pages
     	int numberOfPages = (int)Math.pow(2, MMU.getPageAddressBits());
     	
     	//Instantiate an array of PageTableEntry with the size
@@ -59,7 +59,7 @@ public class PageTable extends IflPageTable
         		tempFrameTableEntry.setPage(null);
         		tempFrameTableEntry.setDirty(false);
         		tempFrameTableEntry.setReferenced(false);
-        		if(tempFrameTableEntry.getReserved() != task)
+        		if(tempFrameTableEntry.getReserved() == task)
         			tempFrameTableEntry.setUnreserved(task);
         	}
         }

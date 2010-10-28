@@ -19,7 +19,6 @@ import osp.Utilities.*;
 */
 public class MMU extends IflMMU
 {
-	//private static int GotAddress;
     /** 
         This method is called once before the simulation starts. 
 	Can be used to initialize the frame table and other static variables.
@@ -33,9 +32,7 @@ public class MMU extends IflMMU
     	{
         	setFrame(i, new FrameTableEntry(i));
         }
-        
-        //GotAddress = (int)Math.pow(2.0, getVirtualAddressBits() - getPageAddressBits());	
-        //PageFaultHandler. init();
+        PageFaultHandler.init();
     }
 
     /**
@@ -60,9 +57,9 @@ public class MMU extends IflMMU
     static public PageTableEntry do_refer(int memoryAddress,
 					  int referenceType, ThreadCB thread)
     {
-        int address = memoryAddress / (int)Math.pow(2.0, getVirtualAddressBits() - getPageAddressBits());
+        int pageNumber = memoryAddress / (int)Math.pow(2.0, getVirtualAddressBits() - getPageAddressBits());
 		
-		PageTableEntry tempPageTableEntry = getPTBR().pages[address];
+		PageTableEntry tempPageTableEntry = getPTBR().pages[pageNumber];
 		
 		//If the page has already faulted or some thread made it faulted we cause a pagefault
 		if(tempPageTableEntry.getValidatingThread() != null || (tempPageTableEntry.pageFaulted))
@@ -84,28 +81,24 @@ public class MMU extends IflMMU
 					tempPageTableEntry.getFrame().setReferenced(true);
 				}
 				return tempPageTableEntry;
-			
-				
 			}
 		}
+		
+		//Set Interrupt
+		
+		InterruptVector.setPage(tempPageTableEntry);
+		InterruptVector.setInterruptType(referenceType);
+		InterruptVector.setThread(thread);
+		CPU.interrupt(PageFault);
 		
 		if(tempPageTableEntry.isValid())
 		{
 			if(referenceType == MemoryWrite)
 			{
-				tempPageTableEntry.getFrame().setDirty(false);
+				tempPageTableEntry.getFrame().setDirty(true);
 			}
-			tempPageTableEntry.getFrame().setReferenced(false);
+			tempPageTableEntry.getFrame().setReferenced(true);
 			
-		}else
-		{
-			
-			//Set Interrupt
-			
-			InterruptVector.setPage(tempPageTableEntry);
-			InterruptVector.setInterruptType(referenceType);
-			InterruptVector.setThread(thread);
-			CPU.interrupt(PageFault);
 		}
 		return tempPageTableEntry;
     }

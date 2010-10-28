@@ -60,14 +60,24 @@ public class PageTableEntry extends IflPageTableEntry
         		//return Success because the page has already generated a page fault
         		return GlobalVariables.SUCCESS;
         	}
+        	
+        	//Suspend the thread
+        	thread.suspend(this);
+        	
+        	//If the PagetableEntry is valid, increment the lockcount
+        	if(isValid())
+        	{
+        		getFrame().incrementLockCount();
+        		return GlobalVariables.SUCCESS;
+        	}
+        	else
+        	{
+        		return GlobalVariables.FAILURE;
+        	}
         }
         
-        //if the thread 
-        thread.suspend(this);
-        
-        int HandlerResult = PageFaultHandler.handlePageFault(thread, GlobalVariables.MemoryLock, this);
-        
-        if(HandlerResult == GlobalVariables.SUCCESS)
+        setValid(false);        
+        if(PageFaultHandler.handlePageFault(thread, GlobalVariables.MemoryLock, this) == GlobalVariables.SUCCESS)
         {
         	getFrame().incrementLockCount();
         	return GlobalVariables.SUCCESS;

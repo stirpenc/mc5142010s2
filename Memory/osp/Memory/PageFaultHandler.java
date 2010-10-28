@@ -376,6 +376,11 @@ public class PageFaultHandler extends IflPageFaultHandler
     	//Write the page in disc
     	newTask.getSwapFile().write(newPage.getID(), newPage, thread);
     }
+
+	public static void init() {
+		// TODO Auto-generated method stub
+		
+	}
     
     
     /*
