@@ -98,7 +98,7 @@ public class PageFaultHandler extends IflPageFaultHandler
     	FrameTableEntry newFrame = null;
     	
     	//Try to allocate a frame
-    	newFrame = AllocateNewFrame();
+    	newFrame = GetNewFrame();
     	
     	if(newFrame == null)//Could not allocate a new frame because the system has no menory.
     	{
@@ -219,9 +219,9 @@ public class PageFaultHandler extends IflPageFaultHandler
     	return SUCCESS;
     }
     
-    //Allocate a new frame and return this frame
+    //get a new frame and return this frame
     //TODO refactor all this function in one loop
-    private static FrameTableEntry AllocateNewFrame()
+    private static FrameTableEntry GetNewFrame()
     {
     	FrameTableEntry newFrame = null;
     	//search in the table for the first free frame
@@ -255,8 +255,7 @@ public class PageFaultHandler extends IflPageFaultHandler
     		}
     	}
     	//if really nothing is found, return the first frame
-    	return MMU.getFrame(0);
-    	   	
+    	return MMU.getFrame(MMU.getFrameTableSize() - 1);
     }
     
     //TODO remove from function
@@ -291,7 +290,7 @@ public class PageFaultHandler extends IflPageFaultHandler
     	}
     	
     	//Else, allocate a newframe
-    	FrameTableEntry newFrame = AllocateNewFrame();
+    	FrameTableEntry newFrame = GetNewFrame();
     	//if null we cant do nothing
     	if(newFrame == null)
     		return;
@@ -379,7 +378,29 @@ public class PageFaultHandler extends IflPageFaultHandler
 
 	public static void init() {
 		// TODO Auto-generated method stub
+		//we don't used this, but the book asked for :-S
+	}
+	
+	static void StarvationAvoid(ThreadCB thread)
+	{
+		FrameTableEntry frame = GetNewFrame();
 		
+		//if the frame is not null
+		if(frame == null)
+		{
+			return;
+		}
+		else
+		{
+			//verify if the page is really used
+			if(frame.getPage() != null)
+			{
+				TaskCB task = frame.getPage().getTask();
+				
+				task.getSwapFile().write(frame.getPage().getID(), frame.getPage(), thread);
+				frame.setDirty(false);
+			}
+		}
 	}
     
     
