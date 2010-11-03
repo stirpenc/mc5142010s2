@@ -81,6 +81,7 @@ public class PageFaultHandler extends IflPageFaultHandler
 					 int referenceType,
 					 PageTableEntry page)
     {
+ 	    	
     	TaskCB newTask = page.getTask();
     	//Check if no pagefault happen
     	if(page.isValid())
@@ -92,8 +93,9 @@ public class PageFaultHandler extends IflPageFaultHandler
     	}
     	
     	//Trigger and pagefault event and suspend the thread
-    	Event localEvent = new SystemEvent("PageFault");
-    	thread.suspend(localEvent);
+    	Event event = new SystemEvent("PageFault");
+    	thread.suspend(event);
+    	
     	
     	FrameTableEntry newFrame = null;
     	
@@ -103,13 +105,13 @@ public class PageFaultHandler extends IflPageFaultHandler
     	if(newFrame == null)//Could not allocate a new frame because the system has no menory.
     	{
     		page.notifyThreads();
-    		localEvent.notifyThreads();
+    		event.notifyThreads();
     		ThreadCB.dispatch();
     		return NotEnoughMemory;
     	}
     	
     	page.setValidatingThread(thread);
-    	
+    	newFrame.setReserved(thread.getTask());
     	//if the frame has a page
     	if(newFrame.getPage() != null)
     	{
@@ -118,15 +120,15 @@ public class PageFaultHandler extends IflPageFaultHandler
     		if(newFrame.isDirty())
     		{
     			//if it is dirty we must swapout the frame
-    			SwapOut(newFrame, thread);
+    			SwapOut(thread, newFrame);
     			
     			//we need to verify if the thread was killed while we are waiting
     			if(thread.getStatus() == GlobalVariables.ThreadKill)
     			{
     				page.notifyThreads();
-    				localEvent.notifyThreads();
+    				event.notifyThreads();
     				ThreadCB.dispatch();
-    				//don't set the dirty bit bacause when don't know the state
+    				//don't set the dirty bit because we don't know the state
     				return FAILURE;
     			}
     			//after that we make the dirty false
@@ -136,10 +138,7 @@ public class PageFaultHandler extends IflPageFaultHandler
     		newFrame.setReferenced(false);
     		newPage.setValid(false);
     		newPage.setFrame(null);
-    		/*if(newPage.getHead().getStatus() != 1)
-    		{
-    			newFrame.setUnreserved(null);
-    		} TODO remove?*/ 
+    		
     	}
     	
     	//we need to check again if the thread was not killed before we get a free frame
@@ -149,7 +148,7 @@ public class PageFaultHandler extends IflPageFaultHandler
     		page.notifyThreads();
     		page.setValidatingThread(null);
     		page.setFrame(null);
-    		localEvent.notifyThreads();
+    		event.notifyThreads();
     		ThreadCB.dispatch();
     		return FAILURE;
     	}
@@ -168,13 +167,13 @@ public class PageFaultHandler extends IflPageFaultHandler
     			//and the task associated is the one that caused the page fault we need to free this frame from this task because it was killed
     			if(newFrame.getPage().getTask() == thread.getTask())
     			{
-	    			newFrame.setUnreserved(null);
+	    			newFrame.setPage(null);
 	    		}
     		}
     		page.notifyThreads();
     		page.setValidatingThread(null);
     		page.setFrame(null);
-    		localEvent.notifyThreads();
+    		event.notifyThreads();
     		ThreadCB.dispatch();
     		return FAILURE;
     	}
@@ -189,7 +188,7 @@ public class PageFaultHandler extends IflPageFaultHandler
     	//again the thread can be killed while waiting
     	if(thread.getStatus() == ThreadKill)
     	{
-    		localEvent.notifyThreads();
+    		event.notifyThreads();
     		//here is important to check if the entire task was terminated
     		if(thread.getTask().getStatus() != TaskTerm)
     		{
@@ -214,7 +213,7 @@ public class PageFaultHandler extends IflPageFaultHandler
     	page.setValidatingThread(null);
     	page.notifyThreads();
     	//notify all the threads
-    	localEvent.notifyThreads();
+    	event.notifyThreads();
     	ThreadCB.dispatch();
     	return SUCCESS;
     }
@@ -228,7 +227,6 @@ public class PageFaultHandler extends IflPageFaultHandler
     	for(int i = 0; i < MMU.getFrameTableSize(); i++)
     	{
     		newFrame = MMU.getFrame(i);
-    		//TODO check this, line 337
     		if((newFrame.getPage() == null) && (!newFrame.isReserved()) && (newFrame.getLockCount() == 0))
     		{
     			return newFrame; //Frame OK.
@@ -259,16 +257,14 @@ public class PageFaultHandler extends IflPageFaultHandler
     }
     
     //TODO remove from function
-    private static PageTableEntry AllocatePage(PageTable page, boolean validade)
+    private static PageTableEntry AllocatePage(PageTable page)
     {
     	//calculate the size
     	 int i = (int)Math.pow(2.0D, MMU.getPageAddressBits());
     	 //search for a not locked page
     	 for (int j = 0; j < i; j++) {
     	      PageTableEntry newPage = page.pages[j];
-    	      if ((!newPage.isReserved()) && 
-    	        ((!validade) || (newPage.isValid())) && 
-    	        ((validade) || (!newPage.isValid())) && (
+    	      if ((!newPage.isReserved()) && (
     	        (!newPage.isValid()) || (newPage.getFrame().getLockCount()  == 0)))
     	      {
     	        return newPage;
@@ -282,7 +278,7 @@ public class PageFaultHandler extends IflPageFaultHandler
     	TaskCB newTask = thread.getTask();
     	
     	//Allocate an page
-    	PageTableEntry newPage = AllocatePage(newTask.getPageTable(), false);
+    	PageTableEntry newPage = AllocatePage(newTask.getPageTable());
     	//if the page is null, or is valid, or never caused a pagefault the thread is ready
     	if((newPage == null) || (newPage.isValid()) || (newPage.getValidatingThread() != null))
     	{
@@ -309,7 +305,7 @@ public class PageFaultHandler extends IflPageFaultHandler
     		if(newFrame.isDirty())
     		{
     			//swapout if it is dirty
-    			SwapOut(newFrame, thread);
+    			SwapOut(thread, newFrame);
     			//cancel all if the calling thread is killed while waiting
     			if(thread.getStatus() == ThreadKill)
     			{
@@ -329,6 +325,7 @@ public class PageFaultHandler extends IflPageFaultHandler
     	}
     	//Associate the new frame with the new page and swapin the data
     	newPage.setFrame(newFrame);
+    	
     	SwapIn(thread, newPage);
     	
     	//if the thread is killed while waiting clean the frame and the page
@@ -368,7 +365,7 @@ public class PageFaultHandler extends IflPageFaultHandler
     	newTask.getSwapFile().read(page.getID(), page, thread);
     }
     
-    public static void SwapOut(FrameTableEntry frame, ThreadCB thread)
+    public static void SwapOut(ThreadCB thread, FrameTableEntry frame)
     {
     	PageTableEntry newPage = frame.getPage();
     	TaskCB newTask = newPage.getTask();

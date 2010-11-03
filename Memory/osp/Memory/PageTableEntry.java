@@ -47,37 +47,25 @@ public class PageTableEntry extends IflPageTableEntry
      */
     public int do_lock(IORB iorb)
     {
-    	//Gets the thread
-        ThreadCB thread = iorb.getThread();
-        
-        //This part verifies if the thread has already generated a pagefault
-        //if the page is involved in a pagefault
-        if(getValidatingThread() != null || pageFaulted)
+    	ThreadCB thread = iorb.getThread();
+    	
+    	
+    	//if the page is not valid, cause a pagefault
+    	if(!isValid() && !pageFaulted)
+    	{
+    		PageFaultHandler.handlePageFault(thread, GlobalVariables.MemoryLock, this);
+    	}
+    	   	
+    	//if the thread that caused the pagefault
+        if(getValidatingThread() != thread)
         {
-        	if(getValidatingThread() == thread)
-        	{
-        		getFrame().incrementLockCount();
-        		//return Success because the page has already generated a page fault
-        		return GlobalVariables.SUCCESS;
-        	}
-        	
-        	//Suspend the thread
         	thread.suspend(this);
-        	
-        	//If the PagetableEntry is valid, increment the lockcount
-        	if(isValid())
-        	{
-        		getFrame().incrementLockCount();
-        		return GlobalVariables.SUCCESS;
-        	}
-        	else
-        	{
-        		return GlobalVariables.FAILURE;
-        	}
         }
-        
-        setValid(false);        
-        if(PageFaultHandler.handlePageFault(thread, GlobalVariables.MemoryLock, this) == GlobalVariables.SUCCESS)
+        if(thread.getStatus() == GlobalVariables.ThreadKill)
+        {
+        	return GlobalVariables.FAILURE;
+        }
+        if(!isValid())
         {
         	getFrame().incrementLockCount();
         	return GlobalVariables.SUCCESS;
@@ -86,7 +74,6 @@ public class PageTableEntry extends IflPageTableEntry
         {
         	return GlobalVariables.FAILURE;
         }
-        
     }
 
     /** This method decreases the lock count on the page by one. 

@@ -35,7 +35,7 @@ public class MMU extends IflMMU
         PageFaultHandler.init();
         
         //Run a daemon to avoid starvation, starvation detector runs each 15000, so we run every 5000
-        Daemon.create("StarvationAvoid", new MyDaemon(), 5000);
+        //Daemon.create("StarvationAvoid", new MyDaemon(), 5000);
     }
 
     /**
@@ -75,13 +75,22 @@ public class MMU extends IflMMU
 		}
 		else
 		{
+			//thread null means that this is the first call
+			if(tempPageTableEntry.getValidatingThread() == null)
+			{
+				tempPageTableEntry.pageFaulted = true;
+				InterruptVector.setInterruptType(referenceType);
+				InterruptVector.setPage(tempPageTableEntry);
+				InterruptVector.setThread(thread);
+				CPU.interrupt(PageFault);
+			}
 			//other thread caused the pagefault
-			if(tempPageTableEntry.getValidatingThread() != thread)
+			else if(tempPageTableEntry.getValidatingThread() != thread && tempPageTableEntry.pageFaulted)
 			{
 				//suspend the thread
 				thread.suspend(tempPageTableEntry);
 			}
-			else
+			else if(!tempPageTableEntry.pageFaulted)
 			{
 				InterruptVector.setInterruptType(referenceType);
 				InterruptVector.setPage(tempPageTableEntry);
