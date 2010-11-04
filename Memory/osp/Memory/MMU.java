@@ -32,10 +32,6 @@ public class MMU extends IflMMU
     	{
         	setFrame(i, new FrameTableEntry(i));
         }
-        PageFaultHandler.init();
-        
-        //Run a daemon to avoid starvation, starvation detector runs each 15000, so we run every 5000
-        //Daemon.create("StarvationAvoid", new MyDaemon(), 5000);
     }
 
     /**
@@ -72,10 +68,11 @@ public class MMU extends IflMMU
 			{
 				tempPageTableEntry.getFrame().setDirty(true);
 			}
+			return tempPageTableEntry;
 		}
 		else
 		{
-			//thread null means that this is the first call
+			//thread null means that no page fault happened
 			if(tempPageTableEntry.getValidatingThread() == null)
 			{
 				tempPageTableEntry.pageFaulted = true;
@@ -83,29 +80,29 @@ public class MMU extends IflMMU
 				InterruptVector.setPage(tempPageTableEntry);
 				InterruptVector.setThread(thread);
 				CPU.interrupt(PageFault);
+				//if thread is killed during pagefault
+				if(thread.getStatus() == GlobalVariables.ThreadKill)
+				{
+					return tempPageTableEntry;
+				}
 			}
 			//other thread caused the pagefault
-			else if(tempPageTableEntry.getValidatingThread() != thread && tempPageTableEntry.pageFaulted)
+			else
 			{
 				//suspend the thread
 				thread.suspend(tempPageTableEntry);
-			}
-			else if(!tempPageTableEntry.pageFaulted)
-			{
-				InterruptVector.setInterruptType(referenceType);
-				InterruptVector.setPage(tempPageTableEntry);
-				InterruptVector.setThread(thread);
-				CPU.interrupt(PageFault);
+				//if thread is killed during suspend
+				if(thread.getStatus() == GlobalVariables.ThreadKill)
+				{
+					return tempPageTableEntry;
+				}
 			}
 		}
-		//if the page is valid and the thread was not killed
-		if(tempPageTableEntry.isValid() && thread.getStatus() != GlobalVariables.ThreadKill)
+		//if no error stoped the process, we change the referenced and dirty bits and return
+		tempPageTableEntry.getFrame().setReferenced(true);
+		if(referenceType == GlobalVariables.MemoryWrite)
 		{
-			tempPageTableEntry.getFrame().setReferenced(true);
-			if(referenceType == GlobalVariables.MemoryWrite)
-			{
-				tempPageTableEntry.getFrame().setDirty(true);
-			}
+			tempPageTableEntry.getFrame().setDirty(true);
 		}
 		return tempPageTableEntry;
     }

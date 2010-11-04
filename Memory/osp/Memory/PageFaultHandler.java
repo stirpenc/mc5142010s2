@@ -82,21 +82,16 @@ public class PageFaultHandler extends IflPageFaultHandler
 					 PageTableEntry page)
     {
  	    	
-    	TaskCB newTask = page.getTask();
+    	TaskCB Task = thread.getTask();
     	//Check if no pagefault happen
     	if(page.isValid())
     	{
     		//If the page is valid the method was incorrect called, dispatch, and then return failure
-    		page.notifyThreads();
-    		ThreadCB.dispatch();
+    		//page.notifyThreads();
+    		//ThreadCB.dispatch();
     		return FAILURE;
     	}
-    	
-    	//Trigger and pagefault event and suspend the thread
-    	Event event = new SystemEvent("PageFault");
-    	thread.suspend(event);
-    	
-    	
+    	    	
     	FrameTableEntry newFrame = null;
     	
     	//Try to allocate a frame
@@ -104,11 +99,16 @@ public class PageFaultHandler extends IflPageFaultHandler
     	
     	if(newFrame == null)//Could not allocate a new frame because the system has no menory.
     	{
-    		page.notifyThreads();
-    		event.notifyThreads();
-    		ThreadCB.dispatch();
+    		//page.notifyThreads();
+    		//event.notifyThreads();
+    		//ThreadCB.dispatch();
     		return NotEnoughMemory;
     	}
+    	
+    	//Trigger and pagefault event and suspend the thread 
+    	Event event = new SystemEvent("PageFaultHappened");
+    	thread.suspend(event);
+    	
     	
     	page.setValidatingThread(thread);
     	newFrame.setReserved(thread.getTask());
@@ -136,21 +136,9 @@ public class PageFaultHandler extends IflPageFaultHandler
     		}
     		//otherwise we just set the frame as cleaned
     		newFrame.setReferenced(false);
+    		newFrame.setPage(null);
     		newPage.setValid(false);
     		newPage.setFrame(null);
-    		
-    	}
-    	
-    	//we need to check again if the thread was not killed before we get a free frame
-    	if(thread.getStatus() == ThreadKill)
-    	{
-    		//if it was killed, the leave the page clean and dispatch
-    		page.notifyThreads();
-    		page.setValidatingThread(null);
-    		page.setFrame(null);
-    		event.notifyThreads();
-    		ThreadCB.dispatch();
-    		return FAILURE;
     	}
     	
     	//set the frame in the page
@@ -181,32 +169,12 @@ public class PageFaultHandler extends IflPageFaultHandler
     	//if all goes right, we can set the page as valid
     	newFrame.setPage(page);
     	page.setValid(true);
-    	
-    	//and then prepare the thread to execute again
-    	PrepareThread(thread);
-    	
-    	//again the thread can be killed while waiting
-    	if(thread.getStatus() == ThreadKill)
-    	{
-    		event.notifyThreads();
-    		//here is important to check if the entire task was terminated
-    		if(thread.getTask().getStatus() != TaskTerm)
-    		{
-    			//if it was, we null the page because it can be used by other process
-    			newFrame.setPage(null);
-    			newFrame.setReferenced(false);
-    		}
-    		//set the page invalid and the frame null
-    		page.setValid(false);
-    		page.setFrame(null);
-    		ThreadCB.dispatch();
-    		return FAILURE;
-    	}
+    	    
     	
     	//unreserve the frame if it is reserved for the task, because the task already has the frame
-    	if(newFrame.getReserved() == newTask)
+    	if(newFrame.getReserved() == Task)
     	{
-    		newFrame.setUnreserved(newTask);    		
+    		newFrame.setUnreserved(Task);    		
     	}
     	
     	//remove the reference for thread that caused pagefault
@@ -254,108 +222,6 @@ public class PageFaultHandler extends IflPageFaultHandler
     	}
     	//if really nothing is found, return the first frame
     	return MMU.getFrame(MMU.getFrameTableSize() - 1);
-    }
-    
-    //TODO remove from function
-    private static PageTableEntry AllocatePage(PageTable page)
-    {
-    	//calculate the size
-    	 int i = (int)Math.pow(2.0D, MMU.getPageAddressBits());
-    	 //search for a not locked page
-    	 for (int j = 0; j < i; j++) {
-    	      PageTableEntry newPage = page.pages[j];
-    	      if ((!newPage.isReserved()) && (
-    	        (!newPage.isValid()) || (newPage.getFrame().getLockCount()  == 0)))
-    	      {
-    	        return newPage;
-    	      }
-    	 }
-    	 return null;
-    }
-    
-    public static void PrepareThread(ThreadCB thread)
-    {
-    	TaskCB newTask = thread.getTask();
-    	
-    	//Allocate an page
-    	PageTableEntry newPage = AllocatePage(newTask.getPageTable());
-    	//if the page is null, or is valid, or never caused a pagefault the thread is ready
-    	if((newPage == null) || (newPage.isValid()) || (newPage.getValidatingThread() != null))
-    	{
-    		return;
-    	}
-    	
-    	//Else, allocate a newframe
-    	FrameTableEntry newFrame = GetNewFrame();
-    	//if null we cant do nothing
-    	if(newFrame == null)
-    		return;
-    	
-    	//setthe thread as who caused the pagefault
-    	newPage.setValidatingThread(thread);
-    	newPage.pageFaulted = true;
-    	//set the frame reserved for the thread
-    	newFrame.setReserved(thread.getTask());
-    	
-    	//if the frame already has a page
-    	if(newFrame.getPage() != null)
-    	{
-    		//backup the frame old page
-    		PageTableEntry newPage2 = newFrame.getPage();
-    		if(newFrame.isDirty())
-    		{
-    			//swapout if it is dirty
-    			SwapOut(thread, newFrame);
-    			//cancel all if the calling thread is killed while waiting
-    			if(thread.getStatus() == ThreadKill)
-    			{
-    				newPage.notifyThreads();
-    				newPage.setValidatingThread(null);
-    				newPage.pageFaulted = false;
-    				return;
-    			}
-    			//set the frame clean after Swapout
-    			newFrame.setDirty(false);
-    		}
-    		//set all frame properties as clean and free the old page
-    		newFrame.setReferenced(false);
-    		newPage2.setValid(false);
-    		newPage2.setFrame(null);
-    		newFrame.setPage(null);
-    	}
-    	//Associate the new frame with the new page and swapin the data
-    	newPage.setFrame(newFrame);
-    	
-    	SwapIn(thread, newPage);
-    	
-    	//if the thread is killed while waiting clean the frame and the page
-    	if(thread.getStatus() == ThreadKill)
-    	{
-    		//if the task is killed unreserve all frame
-    		if((newFrame.getPage() != null) && (newFrame.getPage().getTask() == thread.getTask()))
-    		{
-    			newFrame.setUnreserved(null);
-    		}
-    		//set the page as cleaned
-    		newPage.setValidatingThread(null);
-    		newPage.setFrame(null);
-    		newPage.pageFaulted = false;
-    		newPage.notifyThreads();
-    		return;
-    	}
-    	//Just set the page valid and not dirty
-    	newPage.setValid(true);
-    	newFrame.setPage(newPage);
-    	newFrame.setDirty(false);
-    	
-    	//unreser the frame if it is reserved for this page
-    	if(newFrame.getReserved() == newPage.getTask())
-    	{
-    		newFrame.setUnreserved(newPage.getTask());
-    	}
-    	newPage.pageFaulted = false;
-    	newPage.setValidatingThread(null);
-    	newPage.notifyThreads();
     }
     
     public static void SwapIn(ThreadCB thread, PageTableEntry page)

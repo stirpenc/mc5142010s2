@@ -50,30 +50,34 @@ public class PageTableEntry extends IflPageTableEntry
     	ThreadCB thread = iorb.getThread();
     	
     	
-    	//if the page is not valid, cause a pagefault
-    	if(!isValid() && !pageFaulted)
-    	{
-    		PageFaultHandler.handlePageFault(thread, GlobalVariables.MemoryLock, this);
+    	//if the page is not valid
+    	if(!isValid())
+	    {
+    		//if the thread is null means that it is not in memory
+	    	if(getValidatingThread() == null)
+	    	{
+	    		PageFaultHandler.handlePageFault(thread, GlobalVariables.MemoryLock, this);
+	    	}
+	    	else
+	    	{
+	    		//verify if the thread has caused a pagefault
+	    		if(getValidatingThread() != thread)
+	            {
+	    			//suspend the thread if it not caused a pagefault
+	            	thread.suspend(this);
+	            	//failure if the thread was killed while suspended
+	            	if(thread.getStatus() == GlobalVariables.ThreadKill)
+	                {
+	                	return GlobalVariables.FAILURE;
+	                }
+	            }
+	    	}
     	}
-    	   	
-    	//if the thread that caused the pagefault
-        if(getValidatingThread() != thread)
-        {
-        	thread.suspend(this);
-        }
-        if(thread.getStatus() == GlobalVariables.ThreadKill)
-        {
-        	return GlobalVariables.FAILURE;
-        }
-        if(!isValid())
-        {
-        	getFrame().incrementLockCount();
-        	return GlobalVariables.SUCCESS;
-        }
-        else
-        {
-        	return GlobalVariables.FAILURE;
-        }
+        
+    	//if not returned an error before, increment the count
+    	getFrame().incrementLockCount();
+    	return GlobalVariables.SUCCESS;
+    	
     }
 
     /** This method decreases the lock count on the page by one. 
@@ -86,7 +90,6 @@ public class PageTableEntry extends IflPageTableEntry
     {
     	//Just decrement the lock count
         getFrame().decrementLockCount();
-
     }
 
 

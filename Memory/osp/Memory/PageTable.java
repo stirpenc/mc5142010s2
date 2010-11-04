@@ -53,7 +53,7 @@ public class PageTable extends IflPageTable
         	//Gets a reference to the current page
         	FrameTableEntry tempFrameTableEntry = MMU.getFrame(i);
         	PageTableEntry tempPageTableEntry = tempFrameTableEntry.getPage();
-        	if(tempPageTableEntry.getTask() == task)
+        	if(tempPageTableEntry != null && tempPageTableEntry.getTask() == task)
         	{
         		//Makes the page null, the dirty and referenced false and unreserve 
         		tempFrameTableEntry.setPage(null);
