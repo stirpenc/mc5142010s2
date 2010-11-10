@@ -37,8 +37,16 @@ public class RRB extends IflRRB
     */
     public void do_grant()
     {
-        // your code goes here
-
+        ThreadCB currentThread = getThread();
+        ResourceCB currentResourceCB = getResource();
+        int quantity = (currentResource.getAvailable()) - (getQuantity());
+        int allocated = (currentResource.getAllocated(currentThread)) + (getQuantity());
+        
+        resource.setAvailable(quantity);
+        resource.setAllocated(currentThread, allocated);
+    
+        setStatus(Granted);
+        notifyThread();
     }
 
 
