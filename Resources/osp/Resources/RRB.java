@@ -45,7 +45,7 @@ public class RRB extends IflRRB
         resource.setAvailable(quantity);
         resource.setAllocated(currentThread, allocated);
     
-        setStatus(Granted);
+        setStatus(GlobalVariables.Granted);
         notifyThread();
     }
 

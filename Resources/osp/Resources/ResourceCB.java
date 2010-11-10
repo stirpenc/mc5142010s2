@@ -1,6 +1,9 @@
 package osp.Resources;
 
 import java.util.*;
+
+import javax.annotation.Resource;
+
 import osp.IFLModules.*;
 import osp.Tasks.*;
 import osp.Threads.*;
@@ -14,6 +17,9 @@ import osp.Memory.*;
 */
 public class ResourceCB extends IflResourceCB
 {
+	private static int resourceCounter = 0;
+	private static Hashtable HashT = new Hashtable();
+	private static RRB resource = new RRB(null, null, 0);
     /**
        Creates a new ResourceCB instance with the given number of 
        available instances. This constructor must have super(qty) 
@@ -35,7 +41,7 @@ public class ResourceCB extends IflResourceCB
     */
     public static void init()
     {
-        // your code goes here
+    	resourceCounter = ResourceTable.getResourceCB();
 
     }
 
@@ -52,8 +58,50 @@ public class ResourceCB extends IflResourceCB
     */
     public RRB  do_acquire(int quantity) 
     {
-        // your code goes here
+        ThreadCB currentThread = null;
+        TaskCB currentTask = null;
+        
+        try{
+        	currentTask = MMU.getPTBR().getTask();
+        	currentThread = currentTask.getCurrentThread();
+        }
 
+        catch (NullPointerException localNullPointerException){}
+        
+        if(quantity + getAllocated(currentThread) > getTotal())
+        	return null;
+        
+        if(!HashT.containsKey(currentThread))
+        	HashT.put(currentThread, resource);
+        
+        RRB currentResource = new RRB(currentThread, this, quantity);
+        
+        if( == GlobalVariables.Denied){
+        	if( == 2){
+        		currentResource.
+        	}
+        	if((currentResource.  == 1) && (!HashT.containsValue(currentResource))){
+        		HashT.put(currentThread, currentResource);
+        	}
+        }
+    
+        if( == GlobalVariables.Suppend){
+        	if(quantity <= getAvailable()){
+        		currentResource.
+        	}
+        	else{
+        		if(currentThread.getStatus() != ThreadWaiting){
+        			currentResource.setStatus(GlobalVariables.Suspend);
+        			currentThread.suspend(currentResource);
+        		}
+        		
+        		if(!HashT.countainsValue(currentResource)){
+        			HashT.put(currentThread, currentResource);
+        		}
+        	}
+        }
+        
+        return currentResource;
     }
 
     /**
@@ -64,7 +112,7 @@ public class ResourceCB extends IflResourceCB
     */
     public static Vector do_deadlockDetection()
     {
-        // your code goes here
+       
 
     }
 
@@ -78,7 +126,25 @@ public class ResourceCB extends IflResourceCB
     */
     public static void do_giveupResources(ThreadCB thread)
     {
-        // your code goes here
+    	int counter = 0;
+    	
+        if(!HashT.containsKey(thread))
+        	return;
+        
+        while(counter < resourceCounter){
+        	Resource currentResource = ResourceTable.getResourceCB(counter);
+        	if(currentResource.  != 0){
+        		currentResource.
+        	}
+        	
+        	currentResource.
+        	counter++;
+        }
+        
+        HashT.remove(thread);
+        
+        RRB newRRB = null;
+        
 
     }
 
