@@ -39,9 +39,9 @@ public class ResourceCB extends IflResourceCB
 
        @OSPProject Resources
     */
-    public static void init()
+    public static void init()        /*i think it is right*/
     {
-    	resourceCounter = ResourceTable.getResourceCB();
+    	resourceCounter = ResourceTable.getSize();
 
     }
 
@@ -68,7 +68,7 @@ public class ResourceCB extends IflResourceCB
 
         catch (NullPointerException localNullPointerException){}
         
-        if(quantity + getAllocated(currentThread) > getTotal())
+        if((quantity + getAllocated(currentThread)) > getTotal())
         	return null;
         
         if(!HashT.containsKey(currentThread))
@@ -76,18 +76,18 @@ public class ResourceCB extends IflResourceCB
         
         RRB currentResource = new RRB(currentThread, this, quantity);
         
-        if( == GlobalVariables.Denied){
-        	if( == 2){
-        		currentResource.
+        if(getDeadlockMethod() == GlobalVariables.Avoidance){
+        	if( == Granted){               /*Banker algorthm has to answer that currentResource is granted*/
+        		currentResource.grant();
         	}
-        	if((currentResource.  == 1) && (!HashT.containsValue(currentResource))){
+        	if((currentResource. /*falta inserir o metodo*/) && (!HashT.containsValue(currentResource))){
         		HashT.put(currentThread, currentResource);
         	}
         }
     
-        if( == GlobalVariables.Suppend){
+        if(getDeadlockMethod() == GlobalVariables.Detection){
         	if(quantity <= getAvailable()){
-        		currentResource.
+        		currentResource.grant();
         	}
         	else{
         		if(currentThread.getStatus() != ThreadWaiting){
@@ -133,17 +133,26 @@ public class ResourceCB extends IflResourceCB
         
         while(counter < resourceCounter){
         	Resource currentResource = ResourceTable.getResourceCB(counter);
-        	if(currentResource.  != 0){
-        		currentResource.
+        	if(currentResource.getThread(thread)  != GlobalVariables.Denied){
+        		currentResource.        /*falta a chamada do metodo*/
         	}
         	
-        	currentResource.
+        	currentResource.setAllocated(thread, 0)     /*I am not sure*/
         	counter++;
         }
         
         HashT.remove(thread);
         
         RRB newRRB = null;
+        
+        while(newRRB. != null){
+        	if((newRRB.getThread().getStatus() != GlobalVariables.ThreadKill) && (newRRB.getThread() != thread){
+        		newRRB.grant();      
+        		HashT.put(newRRB.getThread(), resource);
+        	}
+        
+    		HashT.put(newRRB.getThread(), resource);
+        }
         
 
     }
@@ -155,9 +164,37 @@ public class ResourceCB extends IflResourceCB
 
         @OSPProject Resources
     */
-    public void do_release(int quantity)
+    public void do_release(int quantity)     /*i think it is*/
     {
-        // your code goes here
+        ThreadCB currentThread = null;
+        TaskCB currentTask = null;
+        
+        try{
+        	currentTask = MMU.getPTBR().getTask();
+            currentThread = currentlTask.getCurrentThread();
+        }
+        
+        catch (NullPointerException localNullPointerException) {}
+        
+        int counter = getAllocated(currentThread);
+        
+        if( quantity > counter){
+        	quantity = counter;
+        }
+        
+        setAllocated(currentThread, counter - quantity);
+        setAvailable(getAvailable() + quantity);
+        
+        RRB newRRB = null;
+        while ((newRRB = getDeadlockMethod()) != null){    
+        	if(newRRB.getThread().getStatus() != GlobalVariables.ThreadKill){
+        		newRRB.grant();         
+        		
+        		HashT.put(newRRB.getThread(), resource);
+        	}
+        
+    		HashT.put(newRRB.getThread(), resource);
+        }
 
     }
 
