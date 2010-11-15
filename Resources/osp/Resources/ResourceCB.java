@@ -80,7 +80,7 @@ public class ResourceCB extends IflResourceCB
         	if( == Granted){               /*Banker algorthm has to answer that currentResource is granted*/
         		currentResource.grant();
         	}
-        	if((currentResource. /*falta inserir o metodo*/) && (!HashT.containsValue(currentResource))){
+        	if((currentResource. /*falta inserir o metodo*/) && (!HashT.containsValue(currentResource))){ /* ------------- AQUI ---------- */
         		HashT.put(currentThread, currentResource);
         	}
         }
@@ -91,7 +91,7 @@ public class ResourceCB extends IflResourceCB
         	}
         	else{
         		if(currentThread.getStatus() != ThreadWaiting){
-        			currentResource.setStatus(GlobalVariables.Suspend);
+        			currentResource.setStatus(GlobalVariables.Suspended);
         			currentThread.suspend(currentResource);
         		}
         		
@@ -131,13 +131,16 @@ public class ResourceCB extends IflResourceCB
         if(!HashT.containsKey(thread))
         	return;
         
-        while(counter < resourceCounter){
-        	Resource currentResource = ResourceTable.getResourceCB(counter);
-        	if(currentResource.getThread(thread)  != GlobalVariables.Denied){
-        		currentResource.        /*falta a chamada do metodo*/
+        while(counter < resourceCounter)
+        {
+        	ResourceCB currentResource = ResourceTable.getResourceCB(counter); /* ------------- AQUI ---------- */
+        	
+        	if(currentResource.getThread(thread)  != GlobalVariables.Denied) /* ------------- AQUI ---------- */
+        	{ 
+        		currentResource.wait();      /*falta a chamada do metodo*/ /* ------------- Qual metodo? Algoritmo do banqueio ---------- */
         	}
         	
-        	currentResource.setAllocated(thread, 0)     /*I am not sure*/
+        	currentResource.setAllocated(thread, 0);    /*I am not sure*/
         	counter++;
         }
         
@@ -145,7 +148,7 @@ public class ResourceCB extends IflResourceCB
         
         RRB newRRB = null;
         
-        while(newRRB. != null){
+        while(newRRB. != null){ /* ------------- AQUI ---------- */
         	if((newRRB.getThread().getStatus() != GlobalVariables.ThreadKill) && (newRRB.getThread() != thread){
         		newRRB.grant();      
         		HashT.put(newRRB.getThread(), resource);
@@ -186,7 +189,7 @@ public class ResourceCB extends IflResourceCB
         setAvailable(getAvailable() + quantity);
         
         RRB newRRB = null;
-        while ((newRRB = getDeadlockMethod()) != null){    
+        while ((newRRB = getDeadlockMethod()) != null){    /* ------------- AQUI ---------- */
         	if(newRRB.getThread().getStatus() != GlobalVariables.ThreadKill){
         		newRRB.grant();         
         		

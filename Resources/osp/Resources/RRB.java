@@ -39,14 +39,14 @@ public class RRB extends IflRRB
     {
         ThreadCB currentThread = getThread();
         ResourceCB currentResourceCB = getResource();
-        int quantity = (currentResource.getAvailable()) - (getQuantity());
-        int allocated = (currentResource.getAllocated(currentThread)) + (getQuantity());
+        int quantity = (currentResourceCB.getAvailable()) - (getQuantity());
+        int allocated = (currentResourceCB.getAllocated(currentThread)) + (getQuantity());
         
-        resource.setAvailable(quantity);
-        resource.setAllocated(currentThread, allocated);
+        currentResourceCB.setAvailable(quantity);
+        currentResourceCB.setAllocated(currentThread, allocated);
     
         setStatus(GlobalVariables.Granted);
-        notifyThread();
+        notifyThreads();
     }
 
 
