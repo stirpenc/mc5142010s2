@@ -42,7 +42,13 @@ public class DiskInterruptHandler extends IflDiskInterruptHandler
     */
     public void do_handleInterrupt()
     {
-        // your code goes here
+    	 IORB currentIORB1 = (IORB)InterruptVector.getEvent();
+    	 ThreadCB currentThreadCB = InterruptVector.getThread();
+    	 TaskCB currentTaskCB = currentThreadCB.getTask();
+    	 PageTableEntry currentPTEntry = currentIORB1.getPage();
+    	 
+    	 FrameTableEntry currentFTEntry = currentPTEntry.cj();
+    	 Object currentObject = null;
 
     }
 

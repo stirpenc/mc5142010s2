@@ -27,6 +27,8 @@ public class IORB extends IflIORB
 		int ioType, OpenFile openFile) {
         // your code goes here
 
+    	/*constructor*/
+    	super(thread, page, blockNumber, deviceID, ioType, openFile);
     }
 
 
