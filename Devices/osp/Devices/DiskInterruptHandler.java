@@ -47,9 +47,68 @@ public class DiskInterruptHandler extends IflDiskInterruptHandler
     	 TaskCB currentTaskCB = currentThreadCB.getTask();
     	 PageTableEntry currentPTEntry = currentIORB1.getPage();
     	 
-    	 FrameTableEntry currentFTEntry = currentPTEntry.cj();
+    	 FrameTableEntry currentFTEntry = currentPTEntry./*insert method*/;
     	 Object currentObject = null;
 
+    	 a locala = currentIORB1.b4();  /*implement class*/
+    	    locala.cT(); /*change method*/
+    	    if ((locala.cN() == 0) && (locala.eX)) {  /*change method*/
+    	      locala.cS(); /*change method*/
+    	    }
+    	 
+    	 
+    	 
+    	 if (currentThreadCB.getStatus() != GlobalVariable.ThreadKill) 
+    	 {
+    		 if(currentFTEntry == null)
+    	     {
+    			 return;
+    		 }
+    	 
+    		 if(currentIORB1.getDeviceID() != 0)   /*change global variable*/
+    		 {
+    			 localFTEntry.jdMethod_int(true); /*change method*/
+    		 }
+    	 }
+
+    	
+    	 
+    	 if ((currentIORB1.getDeviceID() != 0) && (currentIORB1.getIOType() == FileRead) && (currentTaskCB.getStatus() != 1))  /*change variable 0 e 1*/
+    	 {
+    	      currentFTEntry.jdMethod_for(true); /*change method*/
+    	 }
+
+    	 if ((currentIORB1.getDeviceID() == 0) && (currentThreadCB.getTask().getStatus() != 1))
+    	 {
+    	      currentFTEntry.jdMethod_for(false); /*change method*/
+    	 }
+    	 
+    	 if (currentTaskCB.getStatus() == 1) { /*change global variable*/
+    	      try
+    	      {
+    	        if (currentFTEntry.ao() == localTaskCB) /*change method*/
+    	        {
+    	          currentFTEntry.a(localTaskCB); /*change method*/
+    	        }
+    	      }
+    	      catch (NullPointerException localNullPointerException)
+    	      {
+    	      }
+
+    	    }
+    	 
+    	 currentIORB1.notifyThreads();
+
+    	 IORB currentIORB2 = Device.get(currentIORB1.getDeviceID()).c7(); /*change method*/
+    	 Device.get(currentIORB1.getDeviceID()).jdMethod_char(false); /*change method*/
+    	 
+    	 if (localIORB2 != null) 
+    	 {
+    	      Device.get(currentIORB1.getDeviceID()).jdMethod_new(localIORB2); /*change method*/
+    	 }
+    	 ThreadCB.dispatch();
+
+    	  }
     }
 
 
