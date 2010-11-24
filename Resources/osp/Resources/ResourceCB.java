@@ -5,8 +5,8 @@ import java.util.*;
 import javax.annotation.Resource;
 
 import osp.IFLModules.*;
-import osp.Tasks.*;
-import osp.Threads.*;
+import osp.Tasks.TaskCB;
+import osp.Threads.ThreadCB;
 import osp.Utilities.*;
 import osp.Memory.*;
 
@@ -30,7 +30,6 @@ public class ResourceCB extends IflResourceCB
     public ResourceCB(int qty)
     {
     	super(qty);
-
     }
 
     /**
@@ -42,7 +41,6 @@ public class ResourceCB extends IflResourceCB
     public static void init()        /*i think it is right*/
     {
     	resourceCounter = ResourceTable.getSize();
-
     }
 
     /**
@@ -56,7 +54,7 @@ public class ResourceCB extends IflResourceCB
 
        @OSPProject Resources
     */
-    public RRB  do_acquire(int quantity) 
+    public RRB do_acquire(int quantity) 
     {
         ThreadCB currentThread = null;
         TaskCB currentTask = null;
@@ -80,7 +78,7 @@ public class ResourceCB extends IflResourceCB
         	if(BankerAlgorith(currentResource) == Granted){               /*Banker algorthm has to answer that currentResource is granted*/
         		currentResource.grant();
         	}
-        	if((currentResource.getStatus() != GlobalVariables.Detection) && (!HashT.containsValue(currentResource))){ /* ------------- AQUI ---------- */
+        	if((currentResource.getStatus() == GlobalVariables.Detection) && (!HashT.containsValue(currentResource))){ 
         		HashT.put(currentThread, currentResource);
         	}
         }
@@ -166,7 +164,7 @@ public class ResourceCB extends IflResourceCB
         			 
         			 if(res != 0)
         			 {
-        				 ResourceCB currentResource2 = ((RRB)HashT.get(currentEnumeration)).getResource();
+        				 ResourceCB currentResource2 = ((RRB)HashT.get(currentThread)).getResource();
         				 
         				 if(res > arrayOfResources[currentResource2.getID()])
         				 {
