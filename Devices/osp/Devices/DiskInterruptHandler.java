@@ -47,13 +47,13 @@ public class DiskInterruptHandler extends IflDiskInterruptHandler
     	 TaskCB currentTaskCB = currentThreadCB.getTask();
     	 PageTableEntry currentPTEntry = currentIORB1.getPage();
     	 
-    	 FrameTableEntry currentFTEntry = currentPTEntry./*insert method*/;
+    	 FrameTableEntry currentFTEntry = currentPTEntry.getFrame(); /*i am not sure*/
     	 Object currentObject = null;
 
-    	 a locala = currentIORB1.b4();  /*implement class*/
-    	    locala.cT(); /*change method*/
-    	    if ((locala.cN() == 0) && (locala.eX)) {  /*change method*/
-    	      locala.cS(); /*change method*/
+    	 a locala = currentIORB1.b4();  /*implement class extending IflOpenFile*/
+    	    locala.decrementIORBCount(); /*change variable*/
+    	    if ((locala.getIORBCount() == 0) && (locala.closePeding /*i am not sure*/)) {  /*change variable*/
+    	      locala.do_cancelPedingIO(); /*change variable*/
     	    }
     	 
     	 
@@ -65,30 +65,30 @@ public class DiskInterruptHandler extends IflDiskInterruptHandler
     			 return;
     		 }
     	 
-    		 if(currentIORB1.getDeviceID() != 0)   /*change global variable*/
+    		 if(currentIORB1.getDeviceID() != GlobalVariable.SwapDeviceID)
     		 {
-    			 localFTEntry.jdMethod_int(true); /*change method*/
+    			 currentFTEntry.setReferenced(true);
     		 }
     	 }
 
     	
     	 
-    	 if ((currentIORB1.getDeviceID() != 0) && (currentIORB1.getIOType() == FileRead) && (currentTaskCB.getStatus() != 1))  /*change variable 0 e 1*/
+    	 if ((currentIORB1.getDeviceID() != GlobalVariable.SwapDeviceID) && (currentIORB1.getIOType() == GlobalVariable.FileRead) && (currentTaskCB.getStatus() != GlobalVariable.TaskTerm)) 
     	 {
-    	      currentFTEntry.jdMethod_for(true); /*change method*/
+    	      currentFTEntry.setDirty(true); 
     	 }
 
-    	 if ((currentIORB1.getDeviceID() == 0) && (currentThreadCB.getTask().getStatus() != 1))
+    	 if ((currentIORB1.getDeviceID() == GlobalVariable.SwapDeviceID) && (currentThreadCB.getTask().getStatus() != GlobalVariable.TaskTerm)) 
     	 {
-    	      currentFTEntry.jdMethod_for(false); /*change method*/
+    	      currentFTEntry.setDirty(false); 
     	 }
     	 
-    	 if (currentTaskCB.getStatus() == 1) { /*change global variable*/
+    	 if (currentTaskCB.getStatus() == GlobalVariable.TaskTerm) { 
     	      try
     	      {
-    	        if (currentFTEntry.ao() == localTaskCB) /*change method*/
+    	        if (currentFTEntry.getReserved() == currentTaskCB)
     	        {
-    	          currentFTEntry.a(localTaskCB); /*change method*/
+    	          currentFTEntry.setUnreserved(currentTaskCB);
     	        }
     	      }
     	      catch (NullPointerException localNullPointerException)
@@ -99,12 +99,12 @@ public class DiskInterruptHandler extends IflDiskInterruptHandler
     	 
     	 currentIORB1.notifyThreads();
 
-    	 IORB currentIORB2 = Device.get(currentIORB1.getDeviceID()).c7(); /*change method*/
-    	 Device.get(currentIORB1.getDeviceID()).jdMethod_char(false); /*change method*/
+    	 IORB currentIORB2 = Device.get(currentIORB1.getDeviceID()).dequeueIORB(); 
+    	 Device.get(currentIORB1.getDeviceID()).setBusy(false); 
     	 
-    	 if (localIORB2 != null) 
+    	 if (currentIORB2 != null) 
     	 {
-    	      Device.get(currentIORB1.getDeviceID()).jdMethod_new(localIORB2); /*change method*/
+    	      Device.get(currentIORB1.getDeviceID()).startIO(currentIORB2); 
     	 }
     	 ThreadCB.dispatch();
 

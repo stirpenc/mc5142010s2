@@ -17,6 +17,8 @@ import osp.FileSys.*;
 import osp.Tasks.*;
 import java.util.*;
 
+public static boolean boo = false;
+
 public class Device extends IflDevice
 {
     /**
@@ -31,7 +33,8 @@ public class Device extends IflDevice
     */
     public Device(int id, int numberOfBlocks)
     {
-        // your code goes here
+    	 super(id, numberOfBlocks);
+    	 this.iorbQueue = new GenericList();  
 
     }
 
@@ -43,7 +46,8 @@ public class Device extends IflDevice
     */
     public static void init()
     {
-        // your code goes here
+    	/*nothing to do*/
+        // your code goes here 
 
     }
 
@@ -66,8 +70,53 @@ public class Device extends IflDevice
     */
     public int do_enqueueIORB(IORB iorb)
     {
-        // your code goes here
+    	 ThreadCB currentThreadCB = iorb.getThread();
 
+    	 int num = iorb.getPage().lock(iorb);
+
+    	 if (num != GlobalVariable.SUCCESS) 
+    	 {
+    	     return GlobalVariable.FAILURE;
+    	 }
+
+    	 if (currentThreadCB.getStatus() != GlobalVariable.ThreadKill) {
+    	      iorb.b4().cR();  /*change method*/
+    	    }
+
+    	 int j = ((Disk)this).getSectorsPerTrack() * ((Disk)this).getBytesPerSector() / (int)Math.pow(2.0D, MMU.af() - MMU.getPageAddressBits());
+    	 int position = iorb.b2() / (j * ((Disk)this).getPlatters());  /*change method*/
+    	 iorb.setCylinder(position);
+
+    	 if (!c1()) /*change method*/
+    	 {
+    	      if (h.j.p()) { /*change method*/
+
+    	          return GlobalVariable.FAILURE;
+    	      }
+
+    	      if (currentThreadCB.getStatus() != GlobalVariable.ThreadKill) {
+
+    	          StartIO(iorbIORB);  
+    	          return GlobalVariable.SUCCESS;
+    	      }
+
+    	      return GlobalVariable.FAILURE;
+    	 }
+
+    	 if (currentThreadCB.getStatus() != GlobalVariable.ThreadKill) 
+    	 {
+    	      ((GenericList)this.iorbQueue).append(iorb);
+    	 }
+
+    	 if (currentThreadCB.getStatus() != GlobalVariable.ThreadKill) 
+    	 {
+    	      return GlobalVariable.SUCCESS;
+    	 }
+    	 
+    	 return GlobalVariable.FAILURE;
+    	 
+    	 
+    	 
     }
 
     /**
@@ -78,8 +127,30 @@ public class Device extends IflDevice
     */
     public IORB do_dequeueIORB()
     {
-        // your code goes here
+    	if (this.iorbQueue.isEmpty())
+        {
+           if (h.a0.p())   /*change method*/
+           {
+               return new IORB(null, null, 0, 0, 0, null);
+           }
+          
+           return null;
+        }
+    	
+        if (h.S.p())   /*change method*/
+        {
+           return (IORB)(IORB)((GenericList)this.iorbQueue).getHead();
+        }
 
+        if (h.aI.p())  /*change method*/
+        {
+          IORB currentIORB = (IORB)(IORB)((GenericList)this.iorbQueue).removeHead();
+          currentIORB = new IORB(null, null, 0, 0, 0, null);
+          return currentIORB;
+        }
+
+        return (IORB)(IORB)((GenericList)this.iorbQueue).removeHead();
+        
     }
 
     /**
