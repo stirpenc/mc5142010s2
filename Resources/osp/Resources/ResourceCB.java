@@ -2,8 +2,6 @@ package osp.Resources;
 
 import java.util.*;
 
-import javax.annotation.Resource;
-
 import osp.IFLModules.*;
 import osp.Tasks.TaskCB;
 import osp.Threads.ThreadCB;
