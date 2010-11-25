@@ -16,7 +16,7 @@ import osp.Memory.*;
 public class ResourceCB extends IflResourceCB
 {
 	private static int resourceCounter = 0;
-	private static Hashtable HashT = new Hashtable();
+	private static Hashtable<ThreadCB, RRB> HashT = new Hashtable<ThreadCB, RRB>();
 	private static RRB resource = new RRB(null, null, 0);
     /**
        Creates a new ResourceCB instance with the given number of 
@@ -106,9 +106,9 @@ public class ResourceCB extends IflResourceCB
 
        @OSPProject Resources
     */
-    public static Vector do_deadlockDetection()
+    public static Vector<ThreadCB> do_deadlockDetection()
     {  
-    	Vector currentVector = deadLockDetectionAlgorith();
+    	Vector<ThreadCB> currentVector = deadLockDetectionAlgorith();
     	
     	if(currentVector != null)
     	{
@@ -118,15 +118,15 @@ public class ResourceCB extends IflResourceCB
     	return null;
     }
     
-    public static Vector deadLockDetectionAlgorith()
+    public static Vector <ThreadCB> deadLockDetectionAlgorith()
     {
     	int[] arrayOfResources = new int[resourceCounter];
     	for(int count = 0; count < resourceCounter; count++)
     	{
     		arrayOfResources[count] = ResourceTable.getResourceCB(count).getAvailable();
     	}
-    	Hashtable currentHashtable = new Hashtable();
-        Enumeration currentEnumeration = HashT.keys();
+    	Hashtable<ThreadCB, Boolean> currentHashtable = new Hashtable<ThreadCB, Boolean>();
+        Enumeration<ThreadCB> currentEnumeration = HashT.keys();
         
         while(currentEnumeration.hasMoreElements())
         {
@@ -185,7 +185,7 @@ public class ResourceCB extends IflResourceCB
         		break;
         	}
         }
-        Vector vectorThreads = new Vector();
+        Vector<ThreadCB> vectorThreads = new Vector();
         Enumeration currentEnumeration2 = currentHashtable.keys();
         
         while(currentEnumeration2.hasMoreElements())
@@ -299,8 +299,8 @@ public class ResourceCB extends IflResourceCB
     	localResource1.setAllocated(localThread1, quantityRequired + quantityAllocated);
     	localResource1.setAvailable(arrayOfResources[localResource1.getID()] - quantityRequired);
     	
-    	Vector localVector = new Vector();
-    	Enumeration localEnumeration = HashT.keys();
+    	Vector<ThreadCB> localVector = new Vector();
+    	Enumeration<ThreadCB> localEnumeration = HashT.keys();
     	while (localEnumeration.hasMoreElements())
     	{
     		ThreadCB localThread2 = (ThreadCB)localEnumeration.nextElement();
