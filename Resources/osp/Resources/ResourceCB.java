@@ -16,7 +16,7 @@ import osp.Memory.*;
 public class ResourceCB extends IflResourceCB
 {
 	private static int resourceCounter = 0;
-	private static Hashtable<ThreadCB, RRB> HashT = new Hashtable<ThreadCB, RRB>();
+	private static Hashtable HashT = new Hashtable();
 	private static RRB resource = new RRB(null, null, 0);
     /**
        Creates a new ResourceCB instance with the given number of 
@@ -68,7 +68,9 @@ public class ResourceCB extends IflResourceCB
         	return null;
         
         if(!HashT.containsKey(currentThread))
+        {
         	HashT.put(currentThread, resource);
+        }
         
         RRB currentResource = new RRB(currentThread, this, quantity);
         
@@ -76,7 +78,7 @@ public class ResourceCB extends IflResourceCB
         	if(BankerAlgorith(currentResource) == Granted){               /*Banker algorthm has to answer that currentResource is granted*/
         		currentResource.grant();
         	}
-        	if((currentResource.getStatus() == GlobalVariables.Detection) && (!HashT.containsValue(currentResource))){ 
+        	if((currentResource.getStatus() == GlobalVariables.Suspended) && (!HashT.containsValue(currentResource))){ 
         		HashT.put(currentThread, currentResource);
         	}
         }
@@ -106,9 +108,9 @@ public class ResourceCB extends IflResourceCB
 
        @OSPProject Resources
     */
-    public static Vector<ThreadCB> do_deadlockDetection()
+    public static Vector do_deadlockDetection()
     {  
-    	Vector<ThreadCB> currentVector = deadLockDetectionAlgorith();
+    	Vector currentVector = deadLockDetectionAlgorith();
     	
     	if(currentVector != null)
     	{
@@ -118,15 +120,15 @@ public class ResourceCB extends IflResourceCB
     	return null;
     }
     
-    public static Vector <ThreadCB> deadLockDetectionAlgorith()
+    public static Vector deadLockDetectionAlgorith()
     {
     	int[] arrayOfResources = new int[resourceCounter];
     	for(int count = 0; count < resourceCounter; count++)
     	{
     		arrayOfResources[count] = ResourceTable.getResourceCB(count).getAvailable();
     	}
-    	Hashtable<ThreadCB, Boolean> currentHashtable = new Hashtable<ThreadCB, Boolean>();
-        Enumeration<ThreadCB> currentEnumeration = HashT.keys();
+    	Hashtable currentHashtable = new Hashtable();
+        Enumeration currentEnumeration = HashT.keys();
         
         while(currentEnumeration.hasMoreElements())
         {
@@ -185,7 +187,7 @@ public class ResourceCB extends IflResourceCB
         		break;
         	}
         }
-        Vector<ThreadCB> vectorThreads = new Vector();
+        Vector vectorThreads = new Vector();
         Enumeration currentEnumeration2 = currentHashtable.keys();
         
         while(currentEnumeration2.hasMoreElements())
@@ -204,24 +206,22 @@ public class ResourceCB extends IflResourceCB
     
     public static void solveDeadLock(Vector vecThread)
     {
-    	boolean cont = true;
+    	int cont = 1;
     	for(int count = 0; count < vecThread.size(); count++)
     	{
     		ThreadCB currentThread = (ThreadCB)vecThread.get(count);
-    		if(cont)
+    		if(cont != 0)
     		{
     			currentThread.kill();
     		}
     		
-    		if(do_deadlockDetection() == null)
+    		if(deadLockDetectionAlgorith() == null)
     		{
-    			cont = false;
+    			cont = 0;
     			break;
     		}
-    		else
-    		{
-    			cont = true;
-    		}
+    		
+    		cont = 1;
     	}
     	
     	RRB currentRRB = null;
@@ -299,8 +299,8 @@ public class ResourceCB extends IflResourceCB
     	localResource1.setAllocated(localThread1, quantityRequired + quantityAllocated);
     	localResource1.setAvailable(arrayOfResources[localResource1.getID()] - quantityRequired);
     	
-    	Vector<ThreadCB> localVector = new Vector();
-    	Enumeration<ThreadCB> localEnumeration = HashT.keys();
+    	Vector localVector = new Vector();
+    	Enumeration localEnumeration = HashT.keys();
     	while (localEnumeration.hasMoreElements())
     	{
     		ThreadCB localThread2 = (ThreadCB)localEnumeration.nextElement();
