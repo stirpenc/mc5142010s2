@@ -16,7 +16,7 @@ import osp.Memory.*;
 public class ResourceCB extends IflResourceCB
 {
 	private static int resourceCounter = 0;
-	private static Hashtable HashT = new Hashtable();
+	private static Hashtable<ThreadCB, RRB> HashT = new Hashtable<ThreadCB, RRB>();
 	private static RRB resource = new RRB(null, null, 0);
     /**
        Creates a new ResourceCB instance with the given number of 
@@ -36,7 +36,7 @@ public class ResourceCB extends IflResourceCB
 
        @OSPProject Resources
     */
-    public static void init()        /*i think it is right*/
+    public static void init()      
     {
     	resourceCounter = ResourceTable.getSize();
     }
@@ -108,9 +108,9 @@ public class ResourceCB extends IflResourceCB
 
        @OSPProject Resources
     */
-    public static Vector do_deadlockDetection()
+    public static Vector<ThreadCB> do_deadlockDetection()
     {  
-    	Vector currentVector = deadLockDetectionAlgorith();
+    	Vector<ThreadCB> currentVector = deadLockDetectionAlgorith();
     	
     	if(currentVector != null)
     	{
@@ -120,24 +120,24 @@ public class ResourceCB extends IflResourceCB
     	return null;
     }
     
-    public static Vector deadLockDetectionAlgorith()
+    public static Vector<ThreadCB> deadLockDetectionAlgorith()
     {
     	int[] arrayOfResources = new int[resourceCounter];
     	for(int count = 0; count < resourceCounter; count++)
     	{
     		arrayOfResources[count] = ResourceTable.getResourceCB(count).getAvailable();
     	}
-    	Hashtable currentHashtable = new Hashtable();
-        Enumeration currentEnumeration = HashT.keys();
+    	Hashtable<ThreadCB, Boolean> currentHashtable = new Hashtable<ThreadCB, Boolean>();
+        Enumeration<ThreadCB> currentEnumeration = HashT.keys();
         
         while(currentEnumeration.hasMoreElements())
         {
         	ThreadCB currentThread = (ThreadCB)currentEnumeration.nextElement();
         	currentHashtable.put(currentThread, new Boolean(false));
         	
-        	for(int count = 0; count < resourceCounter; count++)
+        	for(int count1 = 0; count1 < resourceCounter; count1++)
         	{
-        		ResourceCB currentResource = ResourceTable.getResourceCB(count);
+        		ResourceCB currentResource = ResourceTable.getResourceCB(count1);
         		
         		if(currentResource.getAllocated(currentThread) != 0)
         		{
@@ -146,20 +146,20 @@ public class ResourceCB extends IflResourceCB
         		}
         	}
         }
-        boolean var;
+        int var = 0;
         ThreadCB currentThread;
         while(true)
         {
-        	var = false;
+        	var = 0;
         	currentEnumeration = HashT.keys();
         	
         	while(currentEnumeration.hasMoreElements())
         	{
         		currentThread = (ThreadCB)currentEnumeration.nextElement();
-        		boolean cont = false;
+        		int cont = 0;
         		 if (((Boolean)currentHashtable.get(currentThread)).booleanValue())
         		 {
-        			 cont = true;
+        			 cont = 1;
         			 int res = ((RRB)HashT.get(currentThread)).getQuantity();
         			 
         			 if(res != 0)
@@ -168,27 +168,27 @@ public class ResourceCB extends IflResourceCB
         				 
         				 if(res > arrayOfResources[currentResource2.getID()])
         				 {
-        					 cont = false;
+        					 cont = 0;
         				 }
         			 }
-        			 if(cont)
+        			 if(cont != 0)
         			 {
-        				 for(int count = 0; count < resourceCounter; count++)
+        				 for(int count2 = 0; count2 < resourceCounter; count2++)
         				 {
-        					 arrayOfResources[count] += ResourceTable.getResourceCB(count).getAllocated(currentThread);
+        					 arrayOfResources[count2] += ResourceTable.getResourceCB(count2).getAllocated(currentThread);
         				 }
         				 currentHashtable.put(currentThread, new Boolean(false));
-        				 var = true;
+        				 var = 1;
         			 }
         		 }
         	}
-        	if(!var)
+        	if(var == 0)
         	{
         		break;
         	}
         }
-        Vector vectorThreads = new Vector();
-        Enumeration currentEnumeration2 = currentHashtable.keys();
+        Vector<ThreadCB> vectorThreads = new Vector<ThreadCB>();
+        Enumeration<ThreadCB> currentEnumeration2 = currentHashtable.keys();
         
         while(currentEnumeration2.hasMoreElements())
         {
@@ -204,7 +204,7 @@ public class ResourceCB extends IflResourceCB
         return vectorThreads;
     }
     
-    public static void solveDeadLock(Vector vecThread)
+    public static void solveDeadLock(Vector<ThreadCB> vecThread)
     {
     	int cont = 1;
     	for(int count = 0; count < vecThread.size(); count++)
@@ -299,8 +299,8 @@ public class ResourceCB extends IflResourceCB
     	localResource1.setAllocated(localThread1, quantityRequired + quantityAllocated);
     	localResource1.setAvailable(arrayOfResources[localResource1.getID()] - quantityRequired);
     	
-    	Vector localVector = new Vector();
-    	Enumeration localEnumeration = HashT.keys();
+    	Vector<ThreadCB> localVector = new Vector<ThreadCB>();
+    	Enumeration<ThreadCB> localEnumeration = HashT.keys();
     	while (localEnumeration.hasMoreElements())
     	{
     		ThreadCB localThread2 = (ThreadCB)localEnumeration.nextElement();
@@ -382,10 +382,10 @@ public class ResourceCB extends IflResourceCB
         	
         	if(currentResource.getAllocated(thread) != 0)
         	{ 
-        		currentResource.setAvailable(currentResource.getAvailable() + currentResource.getAllocated(thread));      /*falta a chamada do metodo*/ /* ------------- Qual metodo? Algoritmo do banqueio ---------- */
+        		currentResource.setAvailable(currentResource.getAvailable() + currentResource.getAllocated(thread));     
         	}
         	
-        	currentResource.setAllocated(thread, 0);    /*I am not sure*/
+        	currentResource.setAllocated(thread, 0);    
         	counter++;
         }
         
@@ -393,7 +393,7 @@ public class ResourceCB extends IflResourceCB
         
         RRB newRRB = null;
         
-        while((newRRB = findGranted()) != null){ /* ------------- AQUI 523---------- */
+        while((newRRB = findGranted()) != null){
         	if((newRRB.getThread().getStatus() != GlobalVariables.ThreadKill) && (newRRB.getThread() != thread)){
         		newRRB.grant();      
         		HashT.put(newRRB.getThread(), resource);
@@ -412,7 +412,7 @@ public class ResourceCB extends IflResourceCB
 
         @OSPProject Resources
     */
-    public void do_release(int quantity)     /*i think it is*/
+    public void do_release(int quantity)  
     {
         ThreadCB currentThread = null;
         TaskCB currentTask = null;
@@ -434,7 +434,7 @@ public class ResourceCB extends IflResourceCB
         setAvailable(getAvailable() + quantity);
         
         RRB newRRB = null;
-        while ((newRRB = findGranted()) != null){    /* ------------- AQUI ---------- */
+        while ((newRRB = findGranted()) != null){
         	if(newRRB.getThread().getStatus() != GlobalVariables.ThreadKill){
         		newRRB.grant();         
         		
@@ -448,8 +448,8 @@ public class ResourceCB extends IflResourceCB
     
     public static RRB findGranted()
     {
-    	Collection currentCollection = HashT.values();
-    	Iterator currentIterator = currentCollection.iterator();
+    	Collection<RRB> currentCollection = HashT.values();
+    	Iterator<RRB> currentIterator = currentCollection.iterator();
     	
     	while(currentIterator.hasNext())
     	{
