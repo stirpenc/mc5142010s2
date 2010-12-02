@@ -50,22 +50,20 @@ public class DiskInterruptHandler extends IflDiskInterruptHandler
     	 FrameTableEntry currentFTEntry = currentPTEntry.getFrame(); /*i am not sure*/
     	 Object currentObject = null;
 
-    	 a locala = currentIORB1.b4();  /*implement class extending IflOpenFile*/
-    	    locala.decrementIORBCount(); /*change variable*/
-    	    if ((locala.getIORBCount() == 0) && (locala.closePeding /*i am not sure*/)) {  /*change variable*/
-    	      locala.do_cancelPedingIO(); /*change variable*/
-    	    }
+/*
+ * Method not completed
+ */
     	 
     	 
     	 
-    	 if (currentThreadCB.getStatus() != GlobalVariable.ThreadKill) 
+    	 if (currentThreadCB.getStatus() != GlobalVariables.ThreadKill) 
     	 {
     		 if(currentFTEntry == null)
     	     {
     			 return;
     		 }
     	 
-    		 if(currentIORB1.getDeviceID() != GlobalVariable.SwapDeviceID)
+    		 if(currentIORB1.getDeviceID() != GlobalVariables.SwapDeviceID)
     		 {
     			 currentFTEntry.setReferenced(true);
     		 }
@@ -73,17 +71,17 @@ public class DiskInterruptHandler extends IflDiskInterruptHandler
 
     	
     	 
-    	 if ((currentIORB1.getDeviceID() != GlobalVariable.SwapDeviceID) && (currentIORB1.getIOType() == GlobalVariable.FileRead) && (currentTaskCB.getStatus() != GlobalVariable.TaskTerm)) 
+    	 if ((currentIORB1.getDeviceID() != GlobalVariables.SwapDeviceID) && (currentIORB1.getIOType() == GlobalVariables.FileRead) && (currentTaskCB.getStatus() != GlobalVariables.TaskTerm)) 
     	 {
     	      currentFTEntry.setDirty(true); 
     	 }
 
-    	 if ((currentIORB1.getDeviceID() == GlobalVariable.SwapDeviceID) && (currentThreadCB.getTask().getStatus() != GlobalVariable.TaskTerm)) 
+    	 if ((currentIORB1.getDeviceID() == GlobalVariables.SwapDeviceID) && (currentThreadCB.getTask().getStatus() != GlobalVariables.TaskTerm)) 
     	 {
     	      currentFTEntry.setDirty(false); 
     	 }
     	 
-    	 if (currentTaskCB.getStatus() == GlobalVariable.TaskTerm) { 
+    	 if (currentTaskCB.getStatus() == GlobalVariables.TaskTerm) { 
     	      try
     	      {
     	        if (currentFTEntry.getReserved() == currentTaskCB)
@@ -115,8 +113,6 @@ public class DiskInterruptHandler extends IflDiskInterruptHandler
     /*
        Feel free to add methods/fields to improve the readability of your code
     */
-
-}
 
 /*
       Feel free to add local classes to improve the readability of your code
