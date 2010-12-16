@@ -20,7 +20,7 @@ public class RRB extends IflRRB
 
         @OSPProject Resources
     */   
-    public RRB(ThreadCB thread, ResourceCB resource,int quantity)
+    public RRB(ThreadCB thread, ResourceCB resource,int quantity)  	//REVIEW ALREADY DONE
     {
     	super(thread, resource, quantity);
 
@@ -33,7 +33,7 @@ public class RRB extends IflRRB
 
         @OSPProject Resources
     */
-    public void do_grant()
+    public void do_grant()  	//REVIEW ALREADY DONE
     {
         ThreadCB currentThread = this.getThread();
         ResourceCB currentResourceCB = this.getResource();

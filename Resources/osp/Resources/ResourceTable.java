@@ -18,7 +18,7 @@ public class ResourceTable extends IflResourceTable
 
         @OSPProject Resources
     */   
-    public ResourceTable()  
+    public ResourceTable()    	//REVIEW ALREADY DONE
     {
         super();
     }

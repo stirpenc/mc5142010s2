@@ -25,7 +25,7 @@ public class ResourceCB extends IflResourceCB
 
        @OSPProject Resources
     */
-    public ResourceCB(int qty)
+    public ResourceCB(int qty)  	//REVIEW ALREADY DONE
     {
     	super(qty);
     }
@@ -36,7 +36,7 @@ public class ResourceCB extends IflResourceCB
 
        @OSPProject Resources
     */
-    public static void init()      
+    public static void init()       	//REVIEW ALREADY DONE 
     {
     	resourceCounter = ResourceTable.getSize();
     }
@@ -52,35 +52,31 @@ public class ResourceCB extends IflResourceCB
 
        @OSPProject Resources
     */
-    public RRB do_acquire(int quantity) 
+    public RRB do_acquire(int quantity)   	//REVIEW ALREADY DONE
     {
-        ThreadCB currentThread = null;
-        TaskCB currentTask = null;
+        TaskCB currentTask = MMU.getPTBR().getTask();
+        ThreadCB currentThread = currentTask.getCurrentThread();
+        RRB currentResource = new RRB(currentThread, this, quantity);
         
-        try{
-        	currentTask = MMU.getPTBR().getTask();
-        	currentThread = currentTask.getCurrentThread();
-        }
-
-        catch (NullPointerException localNullPointerException){}
-        
-        if((quantity + getAllocated(currentThread)) > getTotal())
+        if((quantity + getAllocated(currentThread)) > getTotal())		//Described in the method header
         	return null;
         
         if(!HashT.containsKey(currentThread))
         {
         	HashT.put(currentThread, resource);
         }
-        
-        RRB currentResource = new RRB(currentThread, this, quantity);
-        
+
         if(getDeadlockMethod() == GlobalVariables.Avoidance){
         	if(BankerAlgorith(currentResource) == Granted){               /*Banker algorthm has to answer that currentResource is granted*/
         		currentResource.grant();
         	}
-        	if((currentResource.getStatus() == GlobalVariables.Suspended) && (!HashT.containsValue(currentResource))){ 
-        		HashT.put(currentThread, currentResource);
-        	}
+        	
+        	if(currentResource.getStatus() == GlobalVariables.Suspended)
+        		{
+        			if(!HashT.containsValue(currentResource)){ 
+        				HashT.put(currentThread, currentResource);
+        			}
+        		}
         }
     
         if(getDeadlockMethod() == GlobalVariables.Detection){
@@ -88,9 +84,10 @@ public class ResourceCB extends IflResourceCB
         		currentResource.grant();
         	}
         	else{
-        		if(currentThread.getStatus() != ThreadWaiting){
+        		if(currentThread.getStatus() != ThreadWaiting){		//the request cannot be granted, so it is suspended and return NULL
         			currentResource.setStatus(GlobalVariables.Suspended);
         			currentThread.suspend(currentResource);
+        			return null;
         		}
         		
         		if(!HashT.containsValue(currentResource)){
@@ -108,44 +105,52 @@ public class ResourceCB extends IflResourceCB
 
        @OSPProject Resources
     */
-    public static Vector<ThreadCB> do_deadlockDetection()
+    public static Vector<ThreadCB> do_deadlockDetection()		//REVIEW ALREADY DONE
     {  
-    	Vector<ThreadCB> currentVector = deadLockDetectionAlgorith();
+    	Vector<ThreadCB> currentVector = deadLockDetectionAlgorith();	//verify if there is a deadlock, return NULL to safe state and not null to deadlock state
     	
-    	if(currentVector != null)
+    	if(currentVector == null)
     	{
-    		solveDeadLock(currentVector);
-    		return currentVector;
+    		return null;
     	}
-    	return null;
+    	
+    	solveDeadLock(currentVector);		
+    	return currentVector;
     }
     
     public static Vector<ThreadCB> deadLockDetectionAlgorith()
     {
     	int[] arrayOfResources = new int[resourceCounter];
-    	for(int count = 0; count < resourceCounter; count++)
+    	int count = 0;
+    	
+    	while(count < resourceCounter)
     	{
     		arrayOfResources[count] = ResourceTable.getResourceCB(count).getAvailable();
+    		count++;
     	}
+    		
     	Hashtable<ThreadCB, Boolean> currentHashtable = new Hashtable<ThreadCB, Boolean>();
         Enumeration<ThreadCB> currentEnumeration = HashT.keys();
         
-        while(currentEnumeration.hasMoreElements())
+        count = 0;
+        while(currentEnumeration.hasMoreElements() == true)
         {
         	ThreadCB currentThread = (ThreadCB)currentEnumeration.nextElement();
         	currentHashtable.put(currentThread, new Boolean(false));
         	
-        	for(int count1 = 0; count1 < resourceCounter; count1++)
+        	while(count < resourceCounter)
         	{
-        		ResourceCB currentResource = ResourceTable.getResourceCB(count1);
-        		
+        		ResourceCB currentResource = ResourceTable.getResourceCB(count);
+        
         		if(currentResource.getAllocated(currentThread) != 0)
         		{
         			currentHashtable.put(currentThread, new Boolean(true));
         			break;
         		}
+        		count++;
         	}
         }
+        
         int var = 0;
         ThreadCB currentThread;
         while(true)
@@ -153,7 +158,7 @@ public class ResourceCB extends IflResourceCB
         	var = 0;
         	currentEnumeration = HashT.keys();
         	
-        	while(currentEnumeration.hasMoreElements())
+        	while(currentEnumeration.hasMoreElements() == true)
         	{
         		currentThread = (ThreadCB)currentEnumeration.nextElement();
         		int cont = 0;
@@ -190,45 +195,41 @@ public class ResourceCB extends IflResourceCB
         Vector<ThreadCB> vectorThreads = new Vector<ThreadCB>();
         Enumeration<ThreadCB> currentEnumeration2 = currentHashtable.keys();
         
-        while(currentEnumeration2.hasMoreElements())
+        while(currentEnumeration2.hasMoreElements() == true)
         {
         	ThreadCB currentThread2 = (ThreadCB)currentEnumeration2.nextElement();
             if (((Boolean)currentHashtable.get(currentThread2)).booleanValue()) {
             	vectorThreads.addElement(currentThread2);
               }
         }
-        if(vectorThreads.isEmpty())
+        if(vectorThreads.isEmpty() == true)
         {
         	return null;
         }
         return vectorThreads;
     }
     
-    public static void solveDeadLock(Vector<ThreadCB> vecThread)
+    public static void solveDeadLock(Vector<ThreadCB> vecThread)		//REVIEW ALREADY DONE
     {
-    	int cont = 1;
-    	for(int count = 0; count < vecThread.size(); count++)
+    	int count = 0;
+    	RRB currentRRB = null;
+    	
+    	while(count < vecThread.size())
     	{
     		ThreadCB currentThread = (ThreadCB)vecThread.get(count);
-    		if(cont != 0)
-    		{
-    			currentThread.kill();
-    		}
-    		
     		if(deadLockDetectionAlgorith() == null)
     		{
-    			cont = 0;
     			break;
     		}
-    		
-    		cont = 1;
+    		currentThread.kill();
     	}
     	
-    	RRB currentRRB = null;
-    	while((currentRRB = findGranted()) != null)
+    	currentRRB = findGranted();
+    	while(currentRRB != null)
     	{
     		currentRRB.grant();
     		HashT.put(currentRRB.getThread(), resource);
+    		currentRRB = findGranted();
     	}
     }
     
@@ -369,13 +370,10 @@ public class ResourceCB extends IflResourceCB
 
        @OSPProject Resources
     */
-    public static void do_giveupResources(ThreadCB thread)
+    public static void do_giveupResources(ThreadCB thread)		//REVIEW ALREADY DONE
     {
     	int counter = 0;
-    	
-        if(!HashT.containsKey(thread))
-        	return;
-        
+
         while(counter < resourceCounter)
         {
         	ResourceCB currentResource = ResourceTable.getResourceCB(counter);
@@ -384,22 +382,24 @@ public class ResourceCB extends IflResourceCB
         	{ 
         		currentResource.setAvailable(currentResource.getAvailable() + currentResource.getAllocated(thread));     
         	}
-        	
         	currentResource.setAllocated(thread, 0);    
         	counter++;
         }
         
         HashT.remove(thread);
         
-        RRB newRRB = null;
-        
-        while((newRRB = findGranted()) != null){
-        	if((newRRB.getThread().getStatus() != GlobalVariables.ThreadKill) && (newRRB.getThread() != thread)){
-        		newRRB.grant();      
-        		HashT.put(newRRB.getThread(), resource);
+        RRB newRRB = findGranted();
+        while(newRRB != null)
+        {
+        	if(newRRB.getThread().getStatus() != GlobalVariables.ThreadKill)
+        	{
+        		if(newRRB.getThread() != thread)
+        		{
+        			newRRB.grant();     
+        		}	
         	}
-        
     		HashT.put(newRRB.getThread(), resource);
+    		newRRB = findGranted();
         }
         
 
@@ -412,46 +412,32 @@ public class ResourceCB extends IflResourceCB
 
         @OSPProject Resources
     */
-    public void do_release(int quantity)  
+    public void do_release(int quantity)  	//REVIEW ALREADY DONE
     {
-        ThreadCB currentThread = null;
-        TaskCB currentTask = null;
-        
-        try{
-        	currentTask = MMU.getPTBR().getTask();
-            currentThread = currentTask.getCurrentThread();
-        }
-        
-        catch (NullPointerException localNullPointerException) {}
-        
+        TaskCB currentTask = MMU.getPTBR().getTask();
+        ThreadCB currentThread = currentTask.getCurrentThread();
         int counter = getAllocated(currentThread);
-        
-        if( quantity > counter){
-        	quantity = counter;
-        }
-        
+     
         setAllocated(currentThread, counter - quantity);
         setAvailable(getAvailable() + quantity);
         
-        RRB newRRB = null;
-        while ((newRRB = findGranted()) != null){
-        	if(newRRB.getThread().getStatus() != GlobalVariables.ThreadKill){
+        RRB newRRB = findGranted();
+        while (newRRB != null){		// find if any suspended requests can be granted 
+        	if(newRRB.getThread().getStatus() == GlobalVariables.Suspended){
         		newRRB.grant();         
-        		
-        		HashT.put(newRRB.getThread(), resource);
         	}
-        
-    		HashT.put(newRRB.getThread(), resource);
-        }
 
+    		HashT.put(newRRB.getThread(), resource);
+    		newRRB = findGranted();
+        }
     }
     
-    public static RRB findGranted()
+    public static RRB findGranted()		//we can change the data structure to list with the hash values
     {
     	Collection<RRB> currentCollection = HashT.values();
     	Iterator<RRB> currentIterator = currentCollection.iterator();
     	
-    	while(currentIterator.hasNext())
+    	while(currentIterator.hasNext() == true)
     	{
     		RRB currentRRB = (RRB)currentIterator.next();
     		if(currentRRB.getThread() == null)
@@ -459,14 +445,20 @@ public class ResourceCB extends IflResourceCB
     			continue;
     		}
     		
-    		if((getDeadlockMethod() == GlobalVariables.Avoidance) && (IsGranted(currentRRB)))
+    		if(getDeadlockMethod() == GlobalVariables.Avoidance)
 			{
-				currentRRB.setStatus(GlobalVariables.Granted);
-				return currentRRB;
+    			if(IsGranted(currentRRB))
+    			{
+    				currentRRB.setStatus(GlobalVariables.Granted);
+    				return currentRRB;
+    			}
 			}
-    		if((getDeadlockMethod() == GlobalVariables.Detection) && (currentRRB.getQuantity() <= currentRRB.getResource().getAvailable()))
+    		if(getDeadlockMethod() == GlobalVariables.Detection)
     		{
-    			return currentRRB;
+    			if(currentRRB.getQuantity() <= currentRRB.getResource().getAvailable())
+    			{
+    				return currentRRB;
+    			}
     		}
     	}
     	return null;
